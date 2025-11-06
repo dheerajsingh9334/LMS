@@ -2,7 +2,7 @@
 
 A full-featured LMS built with Next.js, TypeScript, Prisma and many modern web technologies. This repository contains a production-ready web application with teacher and student roles, course management, live streaming, analytics, quizzes, assignments, notes, certificates, and payments.
 
-> Note: This README was generated automatically. Sensitive keys were removed from `.env.example.txt`. Rotate any exposed keys immediately and never commit real secrets.
+
 
 ## Key Features
 
