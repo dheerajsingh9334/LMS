@@ -1,0 +1,992 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  USER
+}
+
+enum UserType {
+  STUDENT
+  TEACHER
+}
+
+model User {
+  id              String           @id @default(cuid()) @map("_id")
+  name            String?
+  email           String?          @unique
+  emailVerified   DateTime?
+  password        String?
+  image           String?
+  role            UserRole?        @default(USER)
+  userType        UserType?        @default(STUDENT)  // Distinguish between student and teacher
+  
+  // Student-specific fields
+  dateOfBirth     DateTime?
+  gender          String?          // "male", "female", "other"
+  
+  // Teacher-specific fields
+  headline        String?          // Professional headline
+  bio             String?          // About me / Bio
+  achievements    String[]         @default([]) // List of achievements
+  socialLinks     Json?            // Social media links { linkedin: "", twitter: "", website: "" }
+  
+  accounts        Account[]
+  checkInDates    DateTime[]       @default([])
+  notifications   Notification[] 
+  quizAttempts    QuizAttempt[]
+  liveSessions    LiveSession[]
+  chatMessages    LiveChatMessage[]
+  uploadedNotes   Note[]           @relation("TeacherNotes")
+  studentNotes    StudentNote[]    @relation("StudentPersonalNotes")
+  courseRatings   CourseRating[]
+  
+  // Assignment relations
+  createdAssignments    Assignment[]           @relation("TeacherAssignments")
+  submissions           AssignmentSubmission[] @relation("StudentSubmissions")
+  gradedSubmissions     AssignmentSubmission[] @relation("GradedSubmissions")
+  
+  // Course relation (as instructor)
+  courses               Course[]               @relation("CourseInstructor")
+  
+  // Final exam attempts
+  finalExamAttempts     FinalExamAttempt[]     @relation("FinalExamAttempts")
+  
+  // Course completions (as student)
+  courseCompletions     CourseCompletion[]     @relation("StudentCourseCompletions")
+}
+
+model Account {
+  id                String  @id @default(cuid()) @map("_id")
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Teacher {
+  id    String @id @default(cuid()) @map("_id")
+  email String @unique
+}
+
+model Course {
+  id          String  @id @default(cuid()) @map("_id")
+  userId      String
+  user        User    @relation("CourseInstructor", fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  imageUrl    String?
+  price       Float?  // Course price in rupiya
+  isPublished Boolean @default(false)
+  isFree      Boolean @default(false)
+  learningOutcomes String[] @default([]) // What students will learn
+  tags        String[] @default([]) // Course tags for search and categorization
+  
+  // Course Landing Page Fields
+  prerequisites   String[] @default([]) // Course prerequisites
+  courseObjectives String[] @default([]) // Main objectives
+  highlights      String[] @default([]) // Key highlights/features
+  projectsIncluded String[] @default([]) // Projects in course
+  whoIsThisFor    String[] @default([]) // Target audience
+  faqs            String[] @default([]) // JSON string array of FAQ objects
+  promoVideoUrl   String? // Course trailer/promo video URL (uploaded to our DB or external link)
+  promoVideoType  String? // "uploaded" or "link" to differentiate
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  chapters        Chapter[]
+  attachments     Attachment[]
+  purchases       Purchase[]
+  watchLater      WatchLater[]
+  favoriteCourses FavoriteCourse[]
+  announcements   Announcement[]
+  liveSessions    LiveSession[]
+  certificates    Certificate[]
+  certificateTemplate CertificateTemplate? @relation("CourseTemplate")
+  ratings         CourseRating[]
+  testimonials    Testimonial[]
+  assignments     Assignment[]
+  studentNotes    StudentNote[]    @relation("CourseStudentNotes")
+  discussions     Discussion[]     @relation("CourseDiscussions")
+  finalExams      FinalExam[]      @relation("CourseFinalExams")
+  finalExamAttempts FinalExamAttempt[] @relation("CourseFinalExamAttempts")
+  courseCompletions CourseCompletion[] @relation("CourseCompletions")
+  
+  // Final Exam Configuration
+  finalExamQuestions Json? // Store final exam questions created by teacher
+  finalExamEnabled Boolean @default(false) // Whether final exam is enabled for this course
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+}
+
+model Category {
+  id      String   @id @default(cuid()) @map("_id")
+  name    String   @unique
+  courses Course[]
+}
+model Announcement {
+  id        String   @id @default(cuid()) @map("_id")
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+}
+model Notification {
+  id            String   @id @default(cuid()) @map("_id")
+  userId        String
+  courseId      String
+  announcementId String
+  isRead        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([courseId])
+}
+
+
+model Attachment {
+  id   String @id @default(cuid()) @map("_id")
+  name String
+  url  String
+  type String? // "file" or "link" to differentiate uploaded files from external links
+  fileType String? // "pdf", "excel", "zip" for uploaded files
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+}
+
+model Chapter {
+  id          String  @id @default(cuid()) @map("_id")
+  title       String
+  description String?
+  videoUrl    String?
+  position    Int
+  isPublished Boolean @default(false)
+  isFree      Boolean @default(true)
+  isPreview   Boolean @default(false) // Allow preview without enrollment
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  quizzes Quiz[]
+  userProgress UserProgress[]
+  assignments Assignment[]
+  studentNotes StudentNote[]  @relation("ChapterStudentNotes")
+  discussions  Discussion[]   @relation("ChapterDiscussions")
+  chapterVideos ChapterVideo[] @relation("ChapterVideos")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+}
+
+model ChapterVideo {
+  id          String   @id @default(cuid()) @map("_id")
+  chapterId   String
+  chapter     Chapter  @relation("ChapterVideos", fields: [chapterId], references: [id], onDelete: Cascade)
+  
+  title       String   // Video title
+  videoUrl    String   // Video URL
+  duration    Int?     // Duration in seconds
+  position    Int      @default(0) // Order of video in chapter
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([chapterId])
+}
+
+model Quiz {
+  id          String  @id @default(cuid()) @map("_id")
+  title       String
+  description String?
+  timeline    Int // in minutes
+  isPublished Boolean @default(false)
+  position    Int
+
+  chapterId String
+  chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  questions Question[]
+  quizAttempts    QuizAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([chapterId])
+}
+
+model Question {
+  id         String   @id @default(cuid()) @map("_id")
+  text       String
+  type       QuestionType
+  option1    String?  // Individual options
+  option2    String?
+  option3    String?
+  option4    String?
+  answer     String?  // Single answer field
+
+  quizId     String
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([quizId])
+}
+
+enum QuestionType {
+  NORMAL
+  MCQ
+}
+
+model QuizAttempt {
+  id         String      @id @default(cuid()) @map("_id")
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId     String
+  quiz       Quiz        @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score      Int
+  answers    Json        // Store answers in JSON format
+  createdAt  DateTime    @default(now())
+
+  @@unique([userId, quizId])
+}
+
+
+model UserProgress {
+  id     String @id @default(cuid()) @map("_id")
+  userId String
+
+  chapterId         String
+  chapter           Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  watchedPercentage Int     @default(0) // New field to store the percentage watched
+
+  isCompleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, chapterId])
+  @@index([chapterId])
+}
+
+model Purchase {
+  id                String   @id @default(cuid()) @map("_id")
+  userId            String
+  courseId          String
+  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  // Payment details
+  stripeSessionId   String?  @unique
+  amount            Float?   // Amount paid in USD
+  paymentStatus     String?  @default("pending") // pending, completed, failed
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+  @@index([userId])
+}
+
+model WatchLater {
+  id       String @id @default(cuid()) @map("_id")
+  userId   String
+  courseId String
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
+model FavoriteCourse {
+  id       String @id @default(cuid()) @map("_id")
+  userId   String
+  courseId String
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
+model LiveSession {
+  id          String   @id @default(cuid()) @map("_id")
+  title       String
+  description String?
+  courseId    String   // Course-specific live session like Unacademy
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chapterId   String?
+  teacherId   String
+  teacher     User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  streamUrl   String?  // URL for the live stream
+  streamKey   String?  // Unique key for streaming
+  isLive      Boolean  @default(false)
+  startedAt   DateTime?
+  endedAt     DateTime?
+  viewCount   Int      @default(0)
+  chatMessages LiveChatMessage[]
+  polls       LivePoll[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([teacherId])
+  @@index([courseId])
+  @@index([isLive, courseId]) // For finding active live sessions by course
+}
+
+model LiveChatMessage {
+  id            String      @id @default(cuid()) @map("_id")
+  liveSessionId String
+  liveSession   LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message       String
+  isPinned      Boolean     @default(false)
+  isFromTeacher Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+
+  @@index([liveSessionId])
+  @@index([userId])
+}
+
+model LivePoll {
+  id            String      @id @default(cuid()) @map("_id")
+  liveSessionId String
+  liveSession   LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  question      String
+  options       String      // JSON array of options
+  isActive      Boolean     @default(true)
+  createdBy     String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  votes         LivePollVote[]
+
+  @@index([liveSessionId])
+  @@index([createdBy])
+}
+
+model LivePollVote {
+  id       String   @id @default(cuid()) @map("_id")
+  pollId   String
+  poll     LivePoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  userId   String
+  option   Int      // Index of the selected option
+  createdAt DateTime @default(now())
+
+  @@unique([pollId, userId]) // One vote per user per poll
+  @@index([pollId])
+  @@index([userId])
+}
+
+model Note {
+  id          String   @id @default(cuid()) @map("_id")
+  title       String
+  description String?
+  fileUrl     String
+  fileName    String
+  courseId    String
+  chapterId   String?
+  teacherId   String
+  teacher     User     @relation("TeacherNotes", fields: [teacherId], references: [id], onDelete: Cascade)
+  downloads   Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([teacherId])
+  @@index([courseId])
+  @@index([chapterId])
+}
+
+model StripeAccount {
+  id              String   @id @default(cuid()) @map("_id")
+  userId          String   @unique
+  stripeAccountId String   @unique
+  isActive        Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Certificate {
+  id              String   @id @default(cuid()) @map("_id")
+  userId          String
+  courseId        String
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  // Student info
+  studentName     String
+  studentEmail    String
+  
+  // Completion details
+  totalChapters       Int      // Total published chapters
+  completedChapters   Int      // Chapters completed
+  totalQuizzes        Int      // Total quizzes in course
+  completedQuizzes    Int      // Quizzes completed
+  totalAssignments    Int      // Total assignments
+  completedAssignments Int     // Assignments completed
+  totalScore          Int      // Sum of all quiz/assignment max scores
+  achievedScore       Int      // Sum of student's scores
+  percentage          Float    // Overall percentage
+  grade               String?  // A+, A, B+, B, C, etc.
+  
+  // Certificate details
+  certificateUrl      String?  // Generated certificate PDF/image
+  templateUrl         String?  // Teacher's custom template
+  verificationCode    String   @unique // Unique code to verify certificate
+  isAutoGenerated     Boolean  @default(true) // True if auto-generated, false if manual
+  isDownloaded        Boolean  @default(false)
+  downloadedAt        DateTime?
+  issueDate           DateTime @default(now())
+  expiryDate          DateTime? // Optional expiry date
+  
+  // Metadata
+  skills              String[] @default([]) // Skills acquired
+  hoursCompleted      Float?   // Total hours spent
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, courseId]) // One certificate per user per course
+  @@index([userId])
+  @@index([courseId])
+}
+
+model CertificateTemplate {
+  id              String   @id @default(cuid()) @map("_id")
+  courseId        String   @unique
+  course          Course   @relation("CourseTemplate", fields: [courseId], references: [id], onDelete: Cascade)
+  
+  // Template details
+  templateUrl     String   // URL to template image/PDF
+  templateType    String   @default("image") // "image" or "pdf"
+  
+  // Positioning for dynamic text (coordinates for auto-generation)
+  namePositionX   Int?     // X coordinate for name
+  namePositionY   Int?     // Y coordinate for name
+  datePositionX   Int?
+  datePositionY   Int?
+  coursePositionX Int?
+  coursePositionY Int?
+  
+  // Styling
+  fontSize        Int?     @default(24)
+  fontColor       String?  @default("#000000")
+  fontFamily      String?  @default("Arial")
+  
+  // Requirements for certificate issuance
+  minPercentage   Float    @default(70.0) // Minimum percentage to get certificate
+  requireAllChapters      Boolean @default(true)
+  requireAllQuizzes       Boolean @default(true)
+  requireAllAssignments   Boolean @default(true)
+  
+  // Auto-issue settings
+  autoIssue       Boolean  @default(true)
+  autoDownload    Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CourseRating {
+  id        String   @id @default(cuid()) @map("_id")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  rating    Int      // 1-5 stars
+  review    String?  // Optional written review
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, courseId]) // One rating per user per course
+  @@index([courseId])
+  @@index([userId])
+}
+
+model Testimonial {
+  id          String   @id @default(cuid()) @map("_id")
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentName String   // Name of the student
+  studentRole String?  // e.g., "Software Engineer", "Student"
+  content     String   // Testimonial text
+  rating      Int      // 1-5 stars
+  imageUrl    String?  // Optional student image
+  isFeatured  Boolean  @default(false) // Featured testimonials show on landing
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([isFeatured])
+}
+
+model Assignment {
+  id          String   @id @default(cuid()) @map("_id")
+  title       String
+  description String
+  
+  // Question PDF attachment (teacher uploads)
+  questionPdfUrl  String?  // URL of the uploaded PDF with questions
+  questionPdfName String?  // Original filename of the PDF
+  
+  // Course association
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  // Optional chapter association
+  chapterId   String?
+  chapter     Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  
+  // Teacher who created the assignment
+  teacherId   String
+  teacher     User     @relation("TeacherAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  // Assignment details
+  dueDate     DateTime
+  maxScore    Int      @default(100)
+  
+  // Submission settings
+  allowLateSubmission Boolean  @default(true)
+  latePenalty         Int      @default(10) // Percentage penalty per day
+  
+  // Submission types allowed
+  allowFileUpload     Boolean  @default(true)
+  allowLinkSubmission Boolean  @default(true)
+  allowTextSubmission Boolean  @default(true)
+  
+  // File upload settings
+  maxFileSize         Int      @default(10) // MB
+  allowedFileTypes    String[] @default(["pdf", "zip"]) // Changed default to PDF and ZIP only
+  
+  // Plagiarism detection
+  enablePlagiarismCheck Boolean @default(false)
+  plagiarismThreshold   Int     @default(20) // Similarity percentage threshold
+  
+  isPublished Boolean  @default(false)
+  
+  // Teacher verification status for assignments
+  verificationStatus String @default("pending") // "pending", "verified", "rejected"
+  verifiedAt        DateTime?
+  verifiedBy        String?   // Teacher who verified
+  verificationNotes String?   // Optional notes from teacher
+  
+  submissions AssignmentSubmission[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([chapterId])
+  @@index([teacherId])
+  @@index([dueDate])
+}
+
+model AssignmentSubmission {
+  id           String     @id @default(cuid()) @map("_id")
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  
+  studentId    String
+  student      User       @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  // Submission content
+  submissionType String   // "file", "link", "text"
+  fileUrl        String?  // If file upload
+  fileName       String?  // If file upload
+  fileSize       Int?     // In bytes
+  linkUrl        String?  // If link submission
+  textContent    String?  // If text submission
+  
+  // Submission status
+  status         String   @default("submitted") // "submitted", "graded", "returned"
+  submittedAt    DateTime @default(now())
+  isLate         Boolean  @default(false)
+  daysLate       Int      @default(0)
+  
+  // Grading
+  score          Int?
+  feedback       String?
+  gradedAt       DateTime?
+  gradedBy       String?
+  grader         User?    @relation("GradedSubmissions", fields: [gradedBy], references: [id])
+  
+  // Plagiarism detection results
+  plagiarismScore      Float?  // Similarity percentage
+  plagiarismReport     String? // JSON string with details
+  plagiarismCheckedAt  DateTime?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([assignmentId, studentId]) // One submission per student per assignment
+  @@index([assignmentId])
+  @@index([studentId])
+  @@index([status])
+  @@index([submittedAt])
+}
+
+// Student Notes System (Personal notes taken during video watching)
+enum NoteContext {
+  CHAPTER
+  VIDEO
+  LIVE_STREAM
+  GENERAL
+}
+
+enum NoteStatus {
+  DRAFT
+  SAVED
+  ARCHIVED
+}
+
+model StudentNote {
+  id          String      @id @default(cuid()) @map("_id")
+  userId      String
+  user        User        @relation("StudentPersonalNotes", fields: [userId], references: [id], onDelete: Cascade)
+  
+  courseId    String
+  course      Course      @relation("CourseStudentNotes", fields: [courseId], references: [id], onDelete: Cascade)
+  
+  chapterId   String?
+  chapter     Chapter?    @relation("ChapterStudentNotes", fields: [chapterId], references: [id], onDelete: Cascade)
+  
+  // Enhanced note content
+  title       String      @default("Untitled Note")
+  content     String
+  richContent Json?       // For rich text editor content (HTML/JSON format)
+  
+  // Context tracking
+  context     NoteContext @default(GENERAL)
+  timestamp   Float?      // Video timestamp in seconds (for video context)
+  liveSessionId String?   // For live stream context
+  
+  // Draft system
+  status      NoteStatus  @default(DRAFT)
+  isDraft     Boolean     @default(true)
+  lastSaved   DateTime    @default(now())
+  
+  // PDF and export features
+  pdfGenerated Boolean    @default(false)
+  pdfUrl      String?     // URL to generated PDF
+  exportCount Int         @default(0)
+  
+  // Metadata
+  tags        String[]    @default([])
+  color       String?     // For color coding notes
+  isBookmarked Boolean    @default(false)
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([chapterId])
+  @@index([context])
+  @@index([status])
+  @@index([createdAt])
+  @@index([liveSessionId])
+}
+
+// Discussion Forum / Q&A System
+model Discussion {
+  id          String   @id @default(cuid()) @map("_id")
+  userId      String
+  userName    String   // Denormalized for performance
+  userImage   String?  // Denormalized for performance
+  
+  courseId    String
+  course      Course   @relation("CourseDiscussions", fields: [courseId], references: [id], onDelete: Cascade)
+  
+  chapterId   String?
+  chapter     Chapter? @relation("ChapterDiscussions", fields: [chapterId], references: [id], onDelete: Cascade)
+  
+  title       String
+  content     String
+  
+  upvotes     String[] @default([]) // Array of user IDs who upvoted
+  downvotes   String[] @default([]) // Array of user IDs who downvoted
+  
+  replies     DiscussionReply[]
+  bestAnswerId String? // ID of the best reply
+  
+  isResolved  Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([chapterId])
+  @@index([createdAt])
+  @@index([isResolved])
+}
+
+model DiscussionReply {
+  id           String     @id @default(cuid()) @map("_id")
+  discussionId String
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  
+  userId       String
+  userName     String     // Denormalized for performance
+  userImage    String?    // Denormalized for performance
+  
+  content      String
+  
+  upvotes      String[]   @default([]) // Array of user IDs who upvoted
+  downvotes    String[]   @default([]) // Array of user IDs who downvoted
+  
+  isBestAnswer Boolean    @default(false)
+  
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([discussionId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([isBestAnswer])
+}
+
+// Analytics Models
+model VideoAnalytics {
+  id          String   @id @default(cuid()) @map("_id")
+  userId      String   // Student watching
+  courseId    String
+  chapterId   String
+  
+  // Watch metrics
+  watchTime   Int      @default(0) // Seconds watched
+  totalTime   Int      @default(0) // Total video duration
+  progress    Float    @default(0) // Percentage watched (0-100)
+  
+  // Engagement metrics
+  completedVideo Boolean @default(false)
+  replays     Int      @default(0) // Number of times rewatched
+  
+  // Drop-off tracking
+  dropOffAt   Int?     // Timestamp where user stopped (seconds)
+  
+  // Device and context
+  device      String?  // mobile, desktop, tablet
+  browser     String?
+  
+  // Session info
+  sessionDuration Int  @default(0) // Total session time in seconds
+  lastWatchedAt DateTime @updatedAt
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([chapterId])
+  @@index([createdAt])
+  @@unique([userId, chapterId]) // One record per user per chapter
+}
+
+model CourseAnalytics {
+  id              String   @id @default(cuid()) @map("_id")
+  courseId        String
+  
+  // Overall metrics
+  totalStudents   Int      @default(0)
+  totalRevenue    Float    @default(0)
+  averageRating   Float    @default(0)
+  
+  // Engagement metrics
+  totalWatchTime  Int      @default(0) // Total seconds watched by all students
+  averageProgress Float    @default(0) // Average course completion percentage
+  completionRate  Float    @default(0) // Percentage of students who completed
+  
+  // Quiz metrics
+  totalQuizAttempts Int    @default(0)
+  averageQuizScore  Float  @default(0)
+  
+  // Assignment metrics
+  totalAssignmentSubmissions Int @default(0)
+  averageAssignmentScore     Float @default(0)
+  
+  // Time-based data (JSON arrays for charts)
+  dailyEnrollments   String[] @default([]) // JSON strings: {"date":"2024-01-01","count":5}
+  dailyRevenue       String[] @default([]) // JSON strings: {"date":"2024-01-01","amount":500}
+  
+  lastCalculated  DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([courseId])
+  @@index([lastCalculated])
+}
+
+model DailyAnalytics {
+  id          String   @id @default(cuid()) @map("_id")
+  courseId    String
+  date        DateTime // Date for this analytics snapshot
+  
+  // Daily metrics
+  enrollments Int      @default(0)
+  revenue     Float    @default(0)
+  watchTime   Int      @default(0) // Total seconds watched that day
+  activeUsers Int      @default(0) // Unique users who accessed course
+  
+  // Engagement
+  videosWatched   Int  @default(0)
+  quizzesTaken    Int  @default(0)
+  assignmentsSubmitted Int @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([date])
+  @@unique([courseId, date]) // One record per course per day
+}
+
+model FinalExam {
+  id          String   @id @default(cuid()) @map("_id")
+  title       String
+  description String?
+  courseId    String
+  course      Course   @relation("CourseFinalExams", fields: [courseId], references: [id], onDelete: Cascade)
+  
+  // Exam settings
+  timeLimit   Int?     // Time limit in minutes
+  passingScore Int     @default(70) // Percentage required to pass
+  isPublished Boolean  @default(false)
+  
+  // Questions
+  questions   FinalExamQuestion[]
+  
+  // Attempts
+  attempts    FinalExamAttempt[] @relation("FinalExamAttempts")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+}
+
+model FinalExamQuestion {
+  id          String    @id @default(cuid()) @map("_id")
+  title       String
+  explanation String?
+  
+  finalExamId String
+  finalExam   FinalExam @relation(fields: [finalExamId], references: [id], onDelete: Cascade)
+  
+  // Question options
+  options     String[]  // Array of answer options
+  correctAnswer Int     // Index of correct answer (0-based)
+  
+  position    Int       // Order of question in exam
+  points      Int       @default(1) // Points for this question
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([finalExamId])
+  @@index([position])
+}
+
+model FinalExamAttempt {
+  id               String   @id @default(cuid()) @map("_id")
+  userId           String
+  user             User     @relation("FinalExamAttempts", fields: [userId], references: [id], onDelete: Cascade)
+  courseId         String
+  course           Course   @relation("CourseFinalExamAttempts", fields: [courseId], references: [id], onDelete: Cascade)
+  finalExamId      String?
+  finalExam        FinalExam? @relation("FinalExamAttempts", fields: [finalExamId], references: [id], onDelete: Cascade)
+  
+  // Exam data
+  questions        Json     // Store exam questions as JSON
+  userAnswers      Json     // Store user's answers as JSON
+  
+  // Results
+  score            Int      // Percentage score (0-100)
+  passed           Boolean  @default(false)
+  grade            String   // A+, A, B, C, D, F
+  certificateEligible Boolean @default(false)
+  
+  // Timing
+  startedAt        DateTime @default(now())
+  completedAt      DateTime
+  timeSpent        Int?     // Time spent in minutes
+  
+  // Metadata
+  examVersion      String   @default("1.0") // Version of exam questions
+  ipAddress        String?  // For security/integrity
+  userAgent        String?  // Browser information
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([score])
+  @@index([completedAt])
+}
+
+model CourseCompletion {
+  id                String   @id @default(cuid()) @map("_id")
+  userId            String
+  courseId          String
+  completedAt       DateTime @default(now())
+  finalExamScore    Int?     // Score from final exam if applicable
+  certificateEarned Boolean  @default(false)
+  
+  user              User     @relation("StudentCourseCompletions", fields: [userId], references: [id], onDelete: Cascade)
+  course            Course   @relation("CourseCompletions", fields: [courseId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([completedAt])
+}
