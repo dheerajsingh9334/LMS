@@ -298,7 +298,7 @@ export const TeacherLiveChat = ({
 
                 <div className="flex items-start gap-2">
                   <Avatar className="w-8 h-8 flex-shrink-0">
-                    <AvatarImage src={message.user.image} />
+                    <AvatarImage src={message.user.image ?? undefined} />
                     <AvatarFallback className="text-xs">
                       {message.user.name?.charAt(0)?.toUpperCase()}
                     </AvatarFallback>
@@ -320,14 +320,14 @@ export const TeacherLiveChat = ({
                         </Badge>
                       )}
                       <span className="text-xs text-gray-500">
-                        {new Date(message.timestamp).toLocaleTimeString([], {
+                        {new Date(message.createdAt).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </span>
                     </div>
                     <p className="text-sm text-gray-300 break-words">
-                      {message.content}
+                      {message.message}
                     </p>
                   </div>
                 </div>
