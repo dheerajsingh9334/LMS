@@ -1,46 +1,6 @@
-import { Category, Course } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getProgress } from "./get-progress";
-
-type CourseWithProgressWithCategory = {
-  id: string;
-  userId: string;
-  title: string;
-  description: string | null;
-  imageUrl: string | null;
-  price: number | null;
-  isPublished: boolean;
-  isFree: boolean;
-  learningOutcomes: string[];
-  tags: string[];
-  // Course Landing Page Fields (added to match Prisma Course model)
-  prerequisites: string[];
-  courseObjectives: string[];
-  highlights: string[];
-  projectsIncluded: string[];
-  whoIsThisFor: string[];
-  faqs: string[];
-  promoVideoUrl: string | null;
-  promoVideoType: string | null;
-  finalExamQuestions: any | null;
-  finalExamEnabled: boolean;
-  categoryId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  category: Category | null;
-  chapters: { id: string }[];
-  purchases: { id: string }[];
-  user: {
-    id: string;
-    name: string | null;
-    image: string | null;
-    headline: string | null;
-  } | null;
-  ratings: {
-    rating: number;
-  }[];
-  progress: number | null;
-};
+import type { CourseWithProgressWithCategory } from "@/types/course";
 
 type GetCourses = {
   userId: string;
@@ -51,7 +11,7 @@ type GetCourses = {
 export const getCourses = async ({
   userId,
   title,
-  categoryId
+  categoryId,
 }: GetCourses): Promise<CourseWithProgressWithCategory[]> => {
   try {
     // Optimized: Only select necessary fields
@@ -104,7 +64,7 @@ export const getCourses = async ({
           select: {
             id: true,
             name: true,
-          }
+          },
         },
         chapters: {
           where: {
@@ -120,7 +80,7 @@ export const getCourses = async ({
           },
           select: {
             id: true,
-          }
+          },
         },
         // Teacher/Instructor info
         user: {
@@ -129,13 +89,13 @@ export const getCourses = async ({
             name: true,
             image: true,
             headline: true,
-          }
+          },
         },
         // Course ratings
         ratings: {
           select: {
             rating: true,
-          }
+          },
         },
       },
       orderBy: {
@@ -145,15 +105,15 @@ export const getCourses = async ({
 
     // Parallel processing for better performance
     const coursesWithProgress = await Promise.all(
-      courses.map(async course => {
+      courses.map(async (course) => {
         if (course.purchases.length === 0) {
           return {
             ...course,
             progress: null,
-          }
+          };
         }
 
-        const {progressPercentage} = await getProgress(userId, course.id);
+        const { progressPercentage } = await getProgress(userId, course.id);
 
         return {
           ...course,
@@ -167,4 +127,4 @@ export const getCourses = async ({
     console.log("[GET_COURSES]", error);
     return [];
   }
-}
+};

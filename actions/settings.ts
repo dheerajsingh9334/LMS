@@ -9,33 +9,30 @@ import { SettingsSchema } from "@/schemas";
 import { getUserByEmail, getUserById } from "@/data/user";
 import { currentUser } from "@/lib/auth";
 
-export const settings = async (
-  values: z.infer<typeof SettingsSchema>
-) => {
+export const settings = async (values: z.infer<typeof SettingsSchema>) => {
   const user = await currentUser();
 
   if (!user) {
-    return { error: "Unauthorized" }
+    return { error: "Unauthorized" };
   }
 
   const dbUser = await getUserById(user.id!);
 
   if (!dbUser) {
-    return { error: "Unauthorized" }
+    return { error: "Unauthorized" };
   }
 
   if (user.isOAuth) {
     values.email = undefined;
     values.password = undefined;
     values.newPassword = undefined;
-    values.isTwoFactorEnabled = undefined;
   }
 
   if (values.email && values.email !== user.email) {
     const existingUser = await getUserByEmail(values.email);
 
     if (existingUser && existingUser.id !== user.id) {
-      return { error: "Email already in use!" }
+      return { error: "Email already in use!" };
     }
 
     // const verificationToken = await generateVerificationToken(
@@ -71,7 +68,7 @@ export const settings = async (
     where: { id: dbUser.id },
     data: {
       ...values,
-    }
+    },
   });
 
   unstable_update({
@@ -79,8 +76,8 @@ export const settings = async (
       name: updatedUser.name,
       email: updatedUser.email,
       role: updatedUser.role ?? undefined,
-    }
+    },
   });
 
-  return { success: "Settings Updated!" }
-}
+  return { success: "Settings Updated!" };
+};

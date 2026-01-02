@@ -1,65 +1,74 @@
 /** @type {import('next').NextConfig} */
+const isDev = process.env.NODE_ENV === "development";
+
 const nextConfig = {
+  // ✅ Images: allow external domains but disable optimization in dev
   images: {
+    unoptimized: isDev, // 🔥 THIS FIXES YOUR TIMEOUT ISSUE
     remotePatterns: [
       {
         protocol: "https",
         hostname: "uploadthing.com",
-        pathname: "/**"
+        pathname: "/**",
       },
       {
         protocol: "https",
         hostname: "utfs.io",
-        pathname: "/**"
+        pathname: "/**",
       },
       {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
-        pathname: "/**"
+        pathname: "/**",
       },
       {
         protocol: "https",
         hostname: "images.unsplash.com",
-        pathname: "/**"
+        pathname: "/**",
       },
       {
         protocol: "https",
         hostname: "i.pravatar.cc",
-        pathname: "/**"
-      }
-    ]
+        pathname: "/**",
+      },
+    ],
   },
-  optimizeFonts: true,
-  
-  // Performance optimizations
-  reactStrictMode: true,
+
+  // ✅ Dev speed > strict checks
+  reactStrictMode: false,
+
+  // ✅ Safe defaults
+  poweredByHeader: false,
+  compress: true,
   swcMinify: true,
-  
-  // Optimize production builds
+
+  // ✅ Only strip console in production
   compiler: {
-    removeConsole: process.env.NODE_ENV === "production" ? {
-      exclude: ['error', 'warn'],
-    } : false,
+    removeConsole: !isDev ? { exclude: ["error", "warn"] } : false,
   },
-  
-  // Optimize bundle size
+
+  // ⚠️ Experimental = PROD focused, keep minimal
   experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons', 'recharts'],
-    serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
-    optimizeCss: true,
+    optimizeCss: !isDev,
+    scrollRestoration: true,
+    serverComponentsExternalPackages: [
+      "@prisma/client",
+      "prisma",
+      "bcrypt",
+      "bcryptjs",
+    ],
   },
-  
-  // Improve TypeScript checking performance
-  typescript: {
-    // Run type checking in a separate process during production builds
-    tsconfigPath: './tsconfig.json',
-  },
-  
-  // Modularize imports for better tree-shaking
+
+  // ✅ Tree-shaking icons properly (single definition)
   modularizeImports: {
-    'lucide-react': {
-      transform: 'lucide-react/dist/esm/icons/{{kebabCase member}}',
+    "lucide-react": {
+      transform: "lucide-react/dist/esm/icons/{{kebabCase member}}",
     },
+  },
+
+  // ✅ TS config only, no extra checks in dev
+  typescript: {
+    tsconfigPath: "./tsconfig.json",
   },
 };
 

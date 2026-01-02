@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Play, CheckCircle2, Lock, Video, FileText, ClipboardList } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Play,
+  CheckCircle2,
+  Lock,
+  Video,
+  FileText,
+  ClipboardList,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -43,7 +52,7 @@ export const CourseHierarchy = ({
   courseId,
   currentChapterId,
   content,
-  isPurchased
+  isPurchased,
 }: CourseHierarchyProps) => {
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(
     new Set(currentChapterId ? [currentChapterId] : [])
@@ -60,13 +69,17 @@ export const CourseHierarchy = ({
   };
 
   const getChapterProgress = (chapter: any) => {
-    const totalItems = 1 + chapter.videos.length + chapter.quizzes.length + chapter.assignments.length; // +1 for main video
-    const completedItems = 
+    const totalItems =
+      1 +
+      chapter.videos.length +
+      chapter.quizzes.length +
+      chapter.assignments.length; // +1 for main video
+    const completedItems =
       (chapter.isCompleted ? 1 : 0) +
       chapter.videos.filter((v: any) => v.isCompleted).length +
       chapter.quizzes.filter((q: any) => q.isCompleted).length +
       chapter.assignments.filter((a: any) => a.isCompleted).length;
-    
+
     return Math.round((completedItems / totalItems) * 100);
   };
 
@@ -84,7 +97,10 @@ export const CourseHierarchy = ({
           const isExpanded = expandedChapters.has(chapter.id);
           const isCurrent = currentChapterId === chapter.id;
           const progress = getChapterProgress(chapter);
-          const hasContent = chapter.videos.length > 0 || chapter.quizzes.length > 0 || chapter.assignments.length > 0;
+          const hasContent =
+            chapter.videos.length > 0 ||
+            chapter.quizzes.length > 0 ||
+            chapter.assignments.length > 0;
 
           return (
             <div key={chapter.id} className={cn("", isCurrent && "bg-blue-50")}>
@@ -146,12 +162,17 @@ export const CourseHierarchy = ({
                 <div className="pb-4 pl-8 pr-4 space-y-1">
                   {/* Videos - Show with tree structure */}
                   {chapter.videos.map((video, index) => (
-                    <div key={video.id} className="flex items-center gap-2 py-1.5 text-sm">
+                    <div
+                      key={video.id}
+                      className="flex items-center gap-2 py-1.5 text-sm"
+                    >
                       <div className="flex items-center gap-1">
                         <span className="text-gray-400 text-xs">├─</span>
                         <Video className="h-3.5 w-3.5 text-blue-500" />
                       </div>
-                      <span className="flex-1 text-gray-700">{video.title}</span>
+                      <span className="flex-1 text-gray-700">
+                        {video.title}
+                      </span>
                       {video.isCompleted && (
                         <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
                       )}
@@ -160,13 +181,16 @@ export const CourseHierarchy = ({
 
                   {/* Quizzes - Show with tree structure */}
                   {chapter.quizzes.map((quiz) => (
-                    <div key={quiz.id} className="flex items-center gap-2 py-1.5 text-sm">
+                    <div
+                      key={quiz.id}
+                      className="flex items-center gap-2 py-1.5 text-sm"
+                    >
                       <div className="flex items-center gap-1">
                         <span className="text-gray-400 text-xs">├─</span>
                         <ClipboardList className="h-3.5 w-3.5 text-purple-500" />
                       </div>
                       <Link
-                        href={`/courses/${courseId}/chapters/${chapter.id}/quizzes/${quiz.id}`}
+                        href={`/courses/${courseId}/chapters/${chapter.id}/quiz/${quiz.id}`}
                         className="flex-1 text-gray-700 hover:text-blue-600 transition-colors"
                       >
                         {quiz.title}
@@ -179,10 +203,17 @@ export const CourseHierarchy = ({
 
                   {/* Assignments - Show with tree structure */}
                   {chapter.assignments.map((assignment, index, array) => (
-                    <div key={assignment.id} className="flex items-center gap-2 py-1.5 text-sm">
+                    <div
+                      key={assignment.id}
+                      className="flex items-center gap-2 py-1.5 text-sm"
+                    >
                       <div className="flex items-center gap-1">
                         <span className="text-gray-400 text-xs">
-                          {index === array.length - 1 && chapter.quizzes.length === 0 && chapter.videos.length > 0 ? "└─" : "├─"}
+                          {index === array.length - 1 &&
+                          chapter.quizzes.length === 0 &&
+                          chapter.videos.length > 0
+                            ? "└─"
+                            : "├─"}
                         </span>
                         <FileText className="h-3.5 w-3.5 text-orange-500" />
                       </div>

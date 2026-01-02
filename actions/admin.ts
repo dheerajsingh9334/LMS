@@ -1,14 +1,59 @@
 "use server";
 
-import { currentRole } from "@/lib/auth";
-import { UserRole } from "@prisma/client";
+import * as z from "zod";
+import bcrypt from "bcryptjs";
+
+import { db } from "@/lib/db";
+import { UserRole, UserType } from "@prisma/client";
+import { getUserByEmail } from "@/data/user";
 
 export const admin = async () => {
-  const role = await currentRole();
+  return { error: "Admin features removed" };
+};
 
-  if (role === UserRole.ADMIN) {
-    return { success: "Allowed Server Action!" };
+const AdminRegisterSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(6),
+  secret: z.string().min(1),
+});
+
+export const registerAdmin = async (
+  values: z.infer<typeof AdminRegisterSchema>
+) => {
+  const validated = AdminRegisterSchema.safeParse(values);
+
+  if (!validated.success) {
+    return { error: "Invalid fields!" };
   }
 
-  return { error: "Forbidden Server Action!" }
+  const { name, email, password, secret } = validated.data;
+
+  if (!process.env.ADMIN_SIGNUP_SECRET) {
+    return { error: "Admin signup is not configured." };
+  }
+
+  if (secret !== process.env.ADMIN_SIGNUP_SECRET) {
+    return { error: "Invalid admin secret!" };
+  }
+
+  const existingUser = await getUserByEmail(email);
+
+  if (existingUser) {
+    return { error: "Email already in use!" };
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  await db.user.create({
+    data: {
+      name,
+      email,
+      password: hashedPassword,
+      role: UserRole.ADMIN,
+      userType: UserType.TEACHER,
+    },
+  });
+
+  return { success: "Admin account created successfully! Please login." };
 };

@@ -8,12 +8,11 @@ import { signIn } from "@/auth";
 import { LoginSchema } from "@/schemas";
 import { getUserByEmail } from "@/data/user";
 
-
 import { DEFAULT_LOGIN_REDIRECT } from "@/routes";
 
 export const login = async (
   values: z.infer<typeof LoginSchema>,
-  callbackUrl?: string | null,
+  callbackUrl?: string | null
 ) => {
   const validatedFields = LoginSchema.safeParse(values);
 
@@ -21,7 +20,7 @@ export const login = async (
     return { error: "Invalid fields!" };
   }
 
-  const { email, password, code, userType } = validatedFields.data;
+  const { email, password, userType } = validatedFields.data;
 
   const existingUser = await getUserByEmail(email);
 
@@ -33,7 +32,7 @@ export const login = async (
   if (userType === "TEACHER" && existingUser.role !== "TEACHER") {
     return { error: "This account is not registered as a teacher!" };
   }
-  
+
   if (userType === "STUDENT" && existingUser.role !== "USER") {
     return { error: "This account is not registered as a student!" };
   }
@@ -45,15 +44,14 @@ export const login = async (
       password,
       redirect: false,
     });
-    
+
     // Return success with redirect path based on role
-    const redirectPath = existingUser.role === "TEACHER" 
-      ? "/teacher/courses" 
-      : "/dashboard";
-    
-    return { 
+    const redirectPath =
+      existingUser.role === "TEACHER" ? "/teacher/courses" : "/dashboard";
+
+    return {
       success: "Login successful!",
-      redirectTo: redirectPath
+      redirectTo: redirectPath,
     };
   } catch (error) {
     if (error instanceof AuthError) {

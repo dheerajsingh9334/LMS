@@ -1,11 +1,11 @@
 "use client";
 
-import { 
-  BarChart, 
-  Bell, 
-  Compass, 
-  Heart, 
-  Layout, 
+import {
+  BarChart,
+  Bell,
+  Compass,
+  Heart,
+  Layout,
   List,
   LayoutDashboard,
   ListChecks,
@@ -77,9 +77,9 @@ const studentRoutes = [
     href: "/dashboard/my-notes",
   },
   {
-    icon: FaChalkboardTeacher,
-    label: "Instructors",
-    href: "/instructors",
+    icon: MessageSquare,
+    label: "Messages",
+    href: "/dashboard/messages",
   },
   {
     icon: User,
@@ -107,14 +107,19 @@ const teacherRoutes = [
   {
     icon: Bell,
     label: "Announcements",
-    href: "/teacher/announcements", 
+    href: "/teacher/announcements",
+  },
+  {
+    icon: MessageSquare,
+    label: "Messages",
+    href: "/dashboard/messages",
   },
   {
     icon: User,
     label: "Profile",
     href: "/profile",
-  }
-]
+  },
+];
 
 const getTeacherCourseRoutes = (courseId: string) => [
   {
@@ -162,7 +167,7 @@ const getTeacherCourseRoutes = (courseId: string) => [
     label: "Course Analytics",
     href: `/teacher/courses/${courseId}/analytics`,
   },
-]
+];
 
 const getStudentCourseRoutes = (courseId: string) => [
   {
@@ -215,7 +220,7 @@ const getStudentCourseRoutes = (courseId: string) => [
     label: "Rate Course",
     href: `/courses/${courseId}/rating`,
   },
-]
+];
 
 export const SidebarRoutes = () => {
   const pathname = usePathname();
@@ -244,29 +249,26 @@ export const SidebarRoutes = () => {
 
   // Determine which routes to show
   let routes = isTeacherPage ? teacherRoutes : studentRoutes;
-  
+
   // If teacher is viewing a specific course
-  if (teacherCourseId && pathname?.includes(`/teacher/courses/${teacherCourseId}`)) {
-    routes = [
-      ...teacherRoutes,
-      ...getTeacherCourseRoutes(teacherCourseId)
-    ];
+  if (
+    teacherCourseId &&
+    pathname?.includes(`/teacher/courses/${teacherCourseId}`)
+  ) {
+    routes = [...teacherRoutes, ...getTeacherCourseRoutes(teacherCourseId)];
   }
-  
+
   // If student is viewing a specific course
   if (studentCourseId && pathname?.includes(`/courses/${studentCourseId}`)) {
-    routes = [
-      ...studentRoutes,
-      ...getStudentCourseRoutes(studentCourseId)
-    ];
+    routes = [...studentRoutes, ...getStudentCourseRoutes(studentCourseId)];
   }
 
   return (
     <div className="flex flex-col w-full">
-      {routes.map((route: any) => (
+      {routes.map((route: any) =>
         route.isHeader ? (
-          <div 
-            key={route.href} 
+          <div
+            key={route.href}
             className="px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-4"
           >
             {route.label}
@@ -279,7 +281,7 @@ export const SidebarRoutes = () => {
             href={route.href}
           />
         )
-      ))}
+      )}
     </div>
-  )
-}
+  );
+};

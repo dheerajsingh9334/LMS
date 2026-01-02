@@ -1,11 +1,20 @@
 // ChapterIdPage.tsx
 
 import { redirect } from "next/navigation";
-import { File, FileText, Calendar, Clock, BookOpen, CheckCircle2, PlayCircle, Lock } from "lucide-react";
+import {
+  File,
+  FileText,
+  Calendar,
+  Clock,
+  BookOpen,
+  CheckCircle2,
+  PlayCircle,
+  Lock,
+} from "lucide-react";
 import { Banner } from "@/components/banner";
 import { Separator } from "@/components/ui/separator";
 import dynamic from "next/dynamic";
-const Preview = dynamic(() => import("@/components/preview").then(mod => ({ default: mod.Preview })), { ssr: false });
+const Preview = dynamic(() => import("@/components/preview"), { ssr: false });
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { CourseProgressButton } from "./_components/course-progress-button";
@@ -44,18 +53,12 @@ const ChapterIdPage = async ({
     return redirect("/");
   }
 
-  const {
-    chapter,
-    course,
-    attachments,
-    nextChapter,
-    userProgress,
-    purchase,
-  } = await getChapter({
-    userId,
-    chapterId: params.chapterId,
-    courseId: params.courseId,
-  });
+  const { chapter, course, attachments, nextChapter, userProgress, purchase } =
+    await getChapter({
+      userId,
+      chapterId: params.chapterId,
+      courseId: params.courseId,
+    });
 
   // Chapter videos are now included in the chapter object from getChapter
   const chapterVideos = chapter?.chapterVideos || [];
@@ -65,35 +68,40 @@ const ChapterIdPage = async ({
   }
 
   const purchased = await checkPurchase(userId, params.courseId);
-  
+
   // Check if user is the course instructor
   const isInstructor = course.userId === userId;
-  
+
   // Get chapter accessibility with sequential progression
   const { getChapterAccessibility } = await import("@/lib/chapter-access");
   const chapterAccessibility = await getChapterAccessibility(
-    userId, 
-    params.courseId, 
-    purchased, 
+    userId,
+    params.courseId,
+    purchased,
     isInstructor
   );
-  
-  const currentChapterAccess = chapterAccessibility.find(ch => ch.id === params.chapterId);
+
+  const currentChapterAccess = chapterAccessibility.find(
+    (ch) => ch.id === params.chapterId
+  );
   const isLocked = !currentChapterAccess?.isAccessible;
   const completeOnEnd = !userProgress?.isCompleted;
 
   // Check for active live session for this course - Optimized query
-  const activeLiveSession = (purchased || isInstructor) ? await db.liveSession.findFirst({
-    where: {
-      courseId: params.courseId,
-      isLive: true,
-    },
-    select: {
-      id: true,
-      title: true,
-      isLive: true,
-    },
-  }) : null;
+  const activeLiveSession =
+    purchased || isInstructor
+      ? await db.liveSession.findFirst({
+          where: {
+            courseId: params.courseId,
+            isLive: true,
+          },
+          select: {
+            id: true,
+            title: true,
+            isLive: true,
+          },
+        })
+      : null;
 
   // Fetch quiz data using getQuizData function
   const quizzes = await getQuizData({ chapterId: params.chapterId });
@@ -108,7 +116,8 @@ const ChapterIdPage = async ({
   }
 
   // Determine the timeline for the first incomplete quiz
-  const quizTimelineSeconds = incompleteQuizzes.length > 0 ? incompleteQuizzes[0].timeline : 0;
+  const quizTimelineSeconds =
+    incompleteQuizzes.length > 0 ? incompleteQuizzes[0].timeline : 0;
 
   // Fetch all course chapters for navigation
   const allChapters = await db.chapter.findMany({
@@ -147,10 +156,11 @@ const ChapterIdPage = async ({
   );
 
   // Calculate course progress
-  const completedChapters = chaptersWithProgress.filter((ch) => ch.isCompleted).length;
-  const courseProgressPercentage = allChapters.length > 0 
-    ? (completedChapters / allChapters.length) * 100 
-    : 0;
+  const completedChapters = chaptersWithProgress.filter(
+    (ch) => ch.isCompleted
+  ).length;
+  const courseProgressPercentage =
+    allChapters.length > 0 ? (completedChapters / allChapters.length) * 100 : 0;
 
   // Get course ratings
   const courseRatings = await db.courseRating.findMany({
@@ -162,9 +172,11 @@ const ChapterIdPage = async ({
     },
   });
 
-  const averageRating = courseRatings.length > 0
-    ? courseRatings.reduce((sum, r) => sum + r.rating, 0) / courseRatings.length
-    : 0;
+  const averageRating =
+    courseRatings.length > 0
+      ? courseRatings.reduce((sum, r) => sum + r.rating, 0) /
+        courseRatings.length
+      : 0;
   const totalRatings = courseRatings.length;
 
   // Format chapters for the video player
@@ -175,31 +187,37 @@ const ChapterIdPage = async ({
   }));
 
   // Fetch chapter assignments if user has purchased the course or is instructor
-  const chapterAssignments = (purchased || isInstructor) ? await db.assignment.findMany({
-    where: {
-      chapterId: params.chapterId,
-      isPublished: true
-    },
-    include: {
-      submissions: {
-        where: {
-          studentId: userId
-        }
-      }
-    },
-    orderBy: {
-      dueDate: "asc"
-    }
-  }) : [];
+  const chapterAssignments =
+    purchased || isInstructor
+      ? await db.assignment.findMany({
+          where: {
+            chapterId: params.chapterId,
+            isPublished: true,
+          },
+          include: {
+            submissions: {
+              where: {
+                studentId: userId,
+              },
+            },
+          },
+          orderBy: {
+            dueDate: "asc",
+          },
+        })
+      : [];
 
   return (
     <div>
       {/* Handle automatic purchase completion from Stripe success redirect */}
       <CheckoutSuccessHandler courseId={params.courseId} userId={userId} />
-      
+
       <div>
         {userProgress?.isCompleted && (
-          <Banner variant="success" label="You already completed this chapter." />
+          <Banner
+            variant="success"
+            label="You already completed this chapter."
+          />
         )}
         {isLocked && (
           <Banner
@@ -216,7 +234,7 @@ const ChapterIdPage = async ({
                 Back to Courses
               </Button>
             </Link>
-            
+
             {/* Course Rating Display */}
             {totalRatings > 0 && (
               <div className="flex items-center gap-2">
@@ -271,12 +289,12 @@ const ChapterIdPage = async ({
                   <Lock className="h-8 w-8 mx-auto mb-2 text-slate-500" />
                   <p className="text-slate-600">This chapter is locked</p>
                   <p className="text-sm text-slate-500 mt-1">
-                    {currentChapterAccess?.reason === "Course not purchased" 
+                    {currentChapterAccess?.reason === "Course not purchased"
                       ? "Purchase the course to access this content"
-                      : currentChapterAccess?.reason === "Previous chapter not completed"
+                      : currentChapterAccess?.reason ===
+                        "Previous chapter not completed"
                       ? "Complete the previous chapter to unlock this content"
-                      : "This content is currently unavailable"
-                    }
+                      : "This content is currently unavailable"}
                   </p>
                 </div>
               </div>
@@ -293,7 +311,9 @@ const ChapterIdPage = async ({
               <div className="flex flex-col gap-2">
                 <div className="text-sm text-gray-600 flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
-                  {course.title} → Chapter {allChapters.findIndex(ch => ch.id === params.chapterId) + 1}
+                  {course.title} → Chapter{" "}
+                  {allChapters.findIndex((ch) => ch.id === params.chapterId) +
+                    1}
                 </div>
                 <h1 className="text-2xl font-bold">{chapter.title}</h1>
               </div>
@@ -313,7 +333,10 @@ const ChapterIdPage = async ({
               <div className="p-4 border-t">
                 <VideoPlaylist
                   videos={chapterVideos}
-                  currentVideoId={chapterVideos.find(v => v.videoUrl === chapter.videoUrl)?.id}
+                  currentVideoId={
+                    chapterVideos.find((v) => v.videoUrl === chapter.videoUrl)
+                      ?.id
+                  }
                   completedVideos={[]} // TODO: Track completed videos
                 />
               </div>
@@ -328,12 +351,14 @@ const ChapterIdPage = async ({
                 </h3>
                 <div className="space-y-3">
                   {quizzes.map((quiz) => {
-                    const isCompleted = !incompleteQuizzes.find(q => q.id === quiz.id);
-                    
+                    const isCompleted = !incompleteQuizzes.find(
+                      (q) => q.id === quiz.id
+                    );
+
                     return (
                       <Link
                         key={quiz.id}
-                        href={`/courses/${params.courseId}/chapters/${params.chapterId}/quizzes/${quiz.id}`}
+                        href={`/courses/${params.courseId}/chapters/${params.chapterId}/quiz/${quiz.id}`}
                       >
                         <div className="border rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer">
                           <div className="flex items-center justify-between">
@@ -345,10 +370,14 @@ const ChapterIdPage = async ({
                               )}
                               <div>
                                 <h4 className="font-medium">{quiz.title}</h4>
-                                <p className="text-sm text-gray-600">{quiz.timeline} minutes</p>
+                                <p className="text-sm text-gray-600">
+                                  {quiz.timeline} minutes
+                                </p>
                               </div>
                             </div>
-                            <Badge variant={isCompleted ? "default" : "secondary"}>
+                            <Badge
+                              variant={isCompleted ? "default" : "secondary"}
+                            >
                               {isCompleted ? "Completed" : "Start Quiz"}
                             </Badge>
                           </div>
@@ -362,7 +391,7 @@ const ChapterIdPage = async ({
 
             <div className="p-4 flex flex-col md:flex-row items-center justify-between border-t">
               <div className="flex-1"></div>
-              {(purchase || isInstructor) ? (
+              {purchase || isInstructor ? (
                 <CourseProgressButton
                   chapterId={params.chapterId}
                   courseId={params.courseId}
@@ -370,7 +399,7 @@ const ChapterIdPage = async ({
                   isCompleted={!!userProgress?.isCompleted}
                 />
               ) : (
-                <CoursePurchaseButton 
+                <CoursePurchaseButton
                   courseId={params.courseId}
                   price={course.price}
                   isFree={course.isFree}
@@ -407,14 +436,22 @@ const ChapterIdPage = async ({
                         <div className="border rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h4 className="font-medium">{assignment.title}</h4>
+                              <h4 className="font-medium">
+                                {assignment.title}
+                              </h4>
                               <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                                 {assignment.description}
                               </p>
                               <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />
-                                  <span>Due: {format(new Date(assignment.dueDate), "PPp")}</span>
+                                  <span>
+                                    Due:{" "}
+                                    {format(
+                                      new Date(assignment.dueDate),
+                                      "PPp"
+                                    )}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
@@ -430,10 +467,17 @@ const ChapterIdPage = async ({
                                       {submission.score}/{assignment.maxScore}
                                     </Badge>
                                   ) : (
-                                    <Badge className="bg-green-500">Submitted</Badge>
+                                    <Badge className="bg-green-500">
+                                      Submitted
+                                    </Badge>
                                   )}
                                   {submission.isLate && (
-                                    <Badge variant="destructive" className="text-xs">Late</Badge>
+                                    <Badge
+                                      variant="destructive"
+                                      className="text-xs"
+                                    >
+                                      Late
+                                    </Badge>
                                   )}
                                 </>
                               ) : (
@@ -441,7 +485,9 @@ const ChapterIdPage = async ({
                                   {isOverdue ? (
                                     <Badge variant="destructive">Overdue</Badge>
                                   ) : (
-                                    <Badge variant="secondary">Not Submitted</Badge>
+                                    <Badge variant="secondary">
+                                      Not Submitted
+                                    </Badge>
                                   )}
                                 </>
                               )}
@@ -470,7 +516,6 @@ const ChapterIdPage = async ({
             {/* Course Information */}
             {(purchased || isInstructor) && (
               <div className="mt-8 pt-8 border-t space-y-6">
-                
                 {/* Course Tags */}
                 {course.tags && course.tags.length > 0 && (
                   <div>
@@ -488,10 +533,14 @@ const ChapterIdPage = async ({
                 {/* Prerequisites */}
                 {course.prerequisites && course.prerequisites.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Prerequisites</h3>
+                    <h3 className="text-lg font-semibold mb-3">
+                      Prerequisites
+                    </h3>
                     <ul className="list-disc list-inside space-y-1 text-sm">
                       {course.prerequisites.map((prerequisite, index) => (
-                        <li key={index} className="text-gray-700">{prerequisite}</li>
+                        <li key={index} className="text-gray-700">
+                          {prerequisite}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -500,21 +549,30 @@ const ChapterIdPage = async ({
                 {/* Course Highlights */}
                 {course.highlights && course.highlights.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">What You&apos;ll Learn</h3>
+                    <h3 className="text-lg font-semibold mb-3">
+                      What You&apos;ll Learn
+                    </h3>
                     <ul className="list-disc list-inside space-y-1 text-sm">
                       {course.highlights.map((highlight, index) => (
-                        <li key={index} className="text-gray-700">{highlight}</li>
+                        <li key={index} className="text-gray-700">
+                          {highlight}
+                        </li>
                       ))}
                     </ul>
                   </div>
                 )}
 
                 {/* Check for Certificate */}
-                <CertificateSection courseId={params.courseId} userId={userId} />
+                <CertificateSection
+                  courseId={params.courseId}
+                  userId={userId}
+                />
 
                 {/* Course Rating */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Rate This Course</h3>
+                  <h3 className="text-lg font-semibold mb-4">
+                    Rate This Course
+                  </h3>
                   <CourseRating
                     courseId={params.courseId}
                     hasPurchased={purchased || isInstructor}
@@ -531,28 +589,38 @@ const ChapterIdPage = async ({
           courseId={params.courseId}
           currentChapterId={params.chapterId}
           content={{
-            chapters: chaptersWithProgress.map(ch => ({
+            chapters: chaptersWithProgress.map((ch) => ({
               id: ch.id,
               title: ch.title,
               isCompleted: ch.isCompleted,
               isLocked: ch.isLocked,
               position: ch.position,
-              videos: chapterVideos.filter(v => v.chapterId === ch.id).map(v => ({
-                id: v.id,
-                title: v.title,
-                isCompleted: false // TODO: Track video completion
-              })),
-              quizzes: ch.id === params.chapterId ? quizzes.map(q => ({
-                id: q.id,
-                title: q.title,
-                isCompleted: !incompleteQuizzes.find(iq => iq.id === q.id)
-              })) : [],
-              assignments: ch.id === params.chapterId ? chapterAssignments.map(a => ({
-                id: a.id,
-                title: a.title,
-                isCompleted: a.submissions.length > 0
-              })) : []
-            }))
+              videos: chapterVideos
+                .filter((v) => v.chapterId === ch.id)
+                .map((v) => ({
+                  id: v.id,
+                  title: v.title,
+                  isCompleted: false, // TODO: Track video completion
+                })),
+              quizzes:
+                ch.id === params.chapterId
+                  ? quizzes.map((q) => ({
+                      id: q.id,
+                      title: q.title,
+                      isCompleted: !incompleteQuizzes.find(
+                        (iq) => iq.id === q.id
+                      ),
+                    }))
+                  : [],
+              assignments:
+                ch.id === params.chapterId
+                  ? chapterAssignments.map((a) => ({
+                      id: a.id,
+                      title: a.title,
+                      isCompleted: a.submissions.length > 0,
+                    }))
+                  : [],
+            })),
           }}
           isPurchased={purchased}
         />

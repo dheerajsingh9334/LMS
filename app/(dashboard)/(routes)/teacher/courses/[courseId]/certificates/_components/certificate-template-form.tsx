@@ -24,15 +24,26 @@ export const CertificateTemplateForm = ({
 }: CertificateTemplateFormProps) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [templateUrl, setTemplateUrl] = useState(initialData?.templateUrl || "");
+  const [templateUrl, setTemplateUrl] = useState(
+    initialData?.templateUrl || ""
+  );
   const [autoIssue, setAutoIssue] = useState(initialData?.autoIssue ?? true);
-  const [autoDownload, setAutoDownload] = useState(initialData?.autoDownload ?? false);
+  const [autoDownload, setAutoDownload] = useState(
+    initialData?.autoDownload ?? false
+  );
+  const isPdfTemplate = templateUrl.toLowerCase().endsWith(".pdf");
 
   // Position and styling
-  const [namePositionX, setNamePositionX] = useState(initialData?.namePositionX || 400);
-  const [namePositionY, setNamePositionY] = useState(initialData?.namePositionY || 300);
+  const [namePositionX, setNamePositionX] = useState(
+    initialData?.namePositionX || 400
+  );
+  const [namePositionY, setNamePositionY] = useState(
+    initialData?.namePositionY || 300
+  );
   const [fontSize, setFontSize] = useState(initialData?.fontSize || 24);
-  const [fontColor, setFontColor] = useState(initialData?.fontColor || "#000000");
+  const [fontColor, setFontColor] = useState(
+    initialData?.fontColor || "#000000"
+  );
 
   const onSubmit = async () => {
     try {
@@ -46,13 +57,24 @@ export const CertificateTemplateForm = ({
         namePositionY,
         fontSize,
         fontColor,
+        // Optional extras to align with API schema
+        fontFamily: "Arial",
+        minPercentage: 70,
+        datePositionX: undefined,
+        datePositionY: undefined,
+        coursePositionX: undefined,
+        coursePositionY: undefined,
+        templateType: "image",
       };
 
       if (initialData) {
-        await axios.patch(`/api/courses/${courseId}/certificate-template`, data);
+        await axios.patch(
+          `/api/courses/${courseId}/certificate/template`,
+          data
+        );
         toast.success("Certificate template updated");
       } else {
-        await axios.post(`/api/courses/${courseId}/certificate-template`, data);
+        await axios.post(`/api/courses/${courseId}/certificate/template`, data);
         toast.success("Certificate template created");
       }
 
@@ -71,7 +93,8 @@ export const CertificateTemplateForm = ({
         <div>
           <Label>Certificate Template *</Label>
           <p className="text-sm text-muted-foreground mb-2">
-            Upload a certificate template image (PNG, JPG) or PDF. Recommended size: 1920x1080px
+            Upload a certificate template image (PNG, JPG) or PDF. Recommended
+            size: 1920x1080px
           </p>
           {templateUrl && (
             <div className="mb-2">
@@ -116,14 +139,29 @@ export const CertificateTemplateForm = ({
                 </Button>
               </div>
             </div>
-            <div className="relative w-full aspect-video">
-              <Image
-                src={templateUrl}
-                alt="Certificate Template"
-                fill
-                className="object-contain rounded"
-              />
-            </div>
+            {isPdfTemplate ? (
+              <div className="w-full aspect-video rounded border bg-white">
+                <object
+                  data={templateUrl}
+                  type="application/pdf"
+                  className="w-full h-full rounded"
+                >
+                  <p className="text-sm text-muted-foreground p-4">
+                    PDF preview not available. Use View Full Size to open the
+                    file.
+                  </p>
+                </object>
+              </div>
+            ) : (
+              <div className="relative w-full aspect-video">
+                <Image
+                  src={templateUrl}
+                  alt="Certificate Template"
+                  fill
+                  className="object-contain rounded"
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -135,7 +173,8 @@ export const CertificateTemplateForm = ({
         <div>
           <h3 className="text-lg font-medium">Dynamic Text Positioning</h3>
           <p className="text-sm text-muted-foreground">
-            Configure where student name and other details will appear on the certificate
+            Configure where student name and other details will appear on the
+            certificate
           </p>
         </div>
 
@@ -224,7 +263,8 @@ export const CertificateTemplateForm = ({
           <div className="space-y-0.5">
             <Label>Auto-download on Completion</Label>
             <p className="text-sm text-muted-foreground">
-              Automatically download certificate when student completes the course
+              Automatically download certificate when student completes the
+              course
             </p>
           </div>
           <Switch
@@ -246,10 +286,7 @@ export const CertificateTemplateForm = ({
         >
           Cancel
         </Button>
-        <Button
-          onClick={onSubmit}
-          disabled={isLoading || !templateUrl}
-        >
+        <Button onClick={onSubmit} disabled={isLoading || !templateUrl}>
           <Upload className="h-4 w-4 mr-2" />
           {initialData ? "Update" : "Create"} Template
         </Button>

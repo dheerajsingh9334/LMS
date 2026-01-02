@@ -6,12 +6,13 @@ export async function GET() {
     const user = await currentUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     return NextResponse.json({
-      userType: user.userType,
+      id: user.id,
       role: user.role,
+      userType: user.userType,
       email: user.email,
       name: user.name,
     });

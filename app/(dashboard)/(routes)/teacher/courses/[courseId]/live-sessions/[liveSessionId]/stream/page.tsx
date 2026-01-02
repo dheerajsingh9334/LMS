@@ -6,17 +6,17 @@ import dynamic from "next/dynamic";
 
 // Dynamic import to avoid SSR issues with Agora SDK - Using simplified single-screen version
 const SimpleTeacherStreamWrapper = dynamic(
-  () => import("@/components/live/simple-teacher-stream-wrapper").then(mod => ({ default: mod.default })),
+  () => import("@/components/live/simple-teacher-stream-wrapper"),
   { ssr: false }
 );
 
 const TeacherLiveStreamPage = async ({
-  params
+  params,
 }: {
   params: { courseId: string; liveSessionId: string };
 }) => {
   const user = await currentUser();
-  
+
   if (!user?.id) {
     return redirect("/");
   }
@@ -26,7 +26,7 @@ const TeacherLiveStreamPage = async ({
     where: {
       id: params.courseId,
       userId: user.id,
-    }
+    },
   });
 
   if (!course) {
@@ -44,7 +44,7 @@ const TeacherLiveStreamPage = async ({
       description: true,
       isLive: true,
       courseId: true,
-    }
+    },
   });
 
   if (!liveSession) {
@@ -59,7 +59,7 @@ const TeacherLiveStreamPage = async ({
           label="This live session is not currently active. Please start the session first."
         />
         <div className="mt-4">
-          <a 
+          <a
             href={`/teacher/courses/${params.courseId}/live-sessions`}
             className="text-blue-600 hover:underline"
           >

@@ -6,8 +6,8 @@
 export const publicRoutes = [
   "/",
   "/auth/new-verification",
-  "/api/uploadthing", 
-  "/api/webhook"
+  "/api/uploadthing",
+  "/api/webhook",
 ];
 
 /**
@@ -23,9 +23,12 @@ export const authRoutes = [
   "/auth/student/register",
   "/auth/teacher/login",
   "/auth/teacher/register",
+  "/auth/admin/login",
+  "/auth/admin/register",
+  "/admin/auth",
   "/auth/error",
   "/auth/reset",
-  "/auth/new-password"
+  "/auth/new-password",
 ];
 
 /**

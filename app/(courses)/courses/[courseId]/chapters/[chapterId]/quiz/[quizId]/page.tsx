@@ -1,7 +1,13 @@
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Clock, HelpCircle, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Clock,
+  HelpCircle,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,9 +20,10 @@ interface QuizPageProps {
     chapterId: string;
     quizId: string;
   };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-const QuizPage = async ({ params }: QuizPageProps) => {
+const QuizPage = async ({ params, searchParams }: QuizPageProps) => {
   const user = await currentUser();
 
   if (!user?.id) {
@@ -79,20 +86,25 @@ const QuizPage = async ({ params }: QuizPageProps) => {
     return redirect(`/courses/${params.courseId}/overview`);
   }
 
-  const userAttempt = quiz.quizAttempts[0]; // Most recent attempt
+  const isRetake = searchParams?.retake === "1";
+
+  const userAttempt = !isRetake ? quiz.quizAttempts[0] : undefined; // Most recent attempt
   const hasAttempted = !!userAttempt;
-  
+
   // Calculate score percentage
-  const scorePercentage = hasAttempted && quiz.questions.length > 0 
-    ? Math.round((userAttempt.score / quiz.questions.length) * 100)
-    : 0;
+  const scorePercentage =
+    hasAttempted && quiz.questions.length > 0
+      ? Math.round((userAttempt.score / quiz.questions.length) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="mb-6">
-          <Link href={`/courses/${params.courseId}/chapters/${params.chapterId}`}>
+          <Link
+            href={`/courses/${params.courseId}/chapters/${params.chapterId}`}
+          >
             <Button variant="ghost" size="sm" className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Chapter
@@ -113,10 +125,12 @@ const QuizPage = async ({ params }: QuizPageProps) => {
                   <span>• {quiz.chapter.title}</span>
                 </div>
               </div>
-              
+
               {/* Status Badge */}
               {hasAttempted && (
-                <Badge variant={scorePercentage >= 70 ? "default" : "secondary"}>
+                <Badge
+                  variant={scorePercentage >= 70 ? "default" : "secondary"}
+                >
                   {scorePercentage >= 70 ? "Passed" : "Attempted"}
                 </Badge>
               )}
@@ -131,22 +145,25 @@ const QuizPage = async ({ params }: QuizPageProps) => {
                   <p className="text-gray-600">{quiz.timeline} minutes</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2 text-sm">
                 <HelpCircle className="h-4 w-4 text-green-600" />
                 <div>
                   <p className="font-medium">Questions</p>
-                  <p className="text-gray-600">{quiz.questions.length} questions</p>
+                  <p className="text-gray-600">
+                    {quiz.questions.length} questions
+                  </p>
                 </div>
               </div>
-              
+
               {hasAttempted && (
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="h-4 w-4 text-purple-600" />
                   <div>
                     <p className="font-medium">Your Score</p>
                     <p className="text-gray-600">
-                      {userAttempt.score}/{quiz.questions.length} ({scorePercentage}%)
+                      {userAttempt.score}/{quiz.questions.length} (
+                      {scorePercentage}%)
                     </p>
                   </div>
                 </div>
@@ -177,113 +194,160 @@ const QuizPage = async ({ params }: QuizPageProps) => {
             {hasAttempted ? (
               <div className="space-y-6">
                 {/* Results Summary */}
-                <div className={`p-4 rounded-lg border ${
-                  scorePercentage >= 70 
-                    ? "bg-green-50 border-green-200" 
-                    : "bg-yellow-50 border-yellow-200"
-                }`}>
+                <div
+                  className={`p-4 rounded-lg border ${
+                    scorePercentage >= 70
+                      ? "bg-green-50 border-green-200"
+                      : "bg-yellow-50 border-yellow-200"
+                  }`}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     {scorePercentage >= 70 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
                     ) : (
                       <AlertCircle className="h-5 w-5 text-yellow-600" />
                     )}
-                    <span className={`font-semibold ${
-                      scorePercentage >= 70 ? "text-green-800" : "text-yellow-800"
-                    }`}>
+                    <span
+                      className={`font-semibold ${
+                        scorePercentage >= 70
+                          ? "text-green-800"
+                          : "text-yellow-800"
+                      }`}
+                    >
                       Quiz {scorePercentage >= 70 ? "Passed" : "Completed"}
                     </span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="font-medium">Score:</p>
-                      <p className={scorePercentage >= 70 ? "text-green-700" : "text-yellow-700"}>
-                        {userAttempt.score} out of {quiz.questions.length} ({scorePercentage}%)
+                      <p
+                        className={
+                          scorePercentage >= 70
+                            ? "text-green-700"
+                            : "text-yellow-700"
+                        }
+                      >
+                        {userAttempt.score} out of {quiz.questions.length} (
+                        {scorePercentage}%)
                       </p>
                     </div>
                     <div>
                       <p className="font-medium">Completed:</p>
-                      <p className={scorePercentage >= 70 ? "text-green-700" : "text-yellow-700"}>
+                      <p
+                        className={
+                          scorePercentage >= 70
+                            ? "text-green-700"
+                            : "text-yellow-700"
+                        }
+                      >
                         {new Date(userAttempt.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                     <div>
                       <p className="font-medium">Status:</p>
-                      <p className={scorePercentage >= 70 ? "text-green-700" : "text-yellow-700"}>
-                        {scorePercentage >= 70 ? "Passing Grade" : "Below Passing Grade"}
+                      <p
+                        className={
+                          scorePercentage >= 70
+                            ? "text-green-700"
+                            : "text-yellow-700"
+                        }
+                      >
+                        {scorePercentage >= 70
+                          ? "Passing Grade"
+                          : "Below Passing Grade"}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Retake Option for Low Scores */}
-                {scorePercentage < 70 && (
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-blue-800 mb-3">
-                      You scored below the passing grade of 70%. You can retake the quiz to improve your score.
-                    </p>
-                    <Button 
-                      onClick={() => window.location.reload()}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
+                {/* Retake Option */}
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-blue-800 mb-3">
+                    {scorePercentage < 70
+                      ? "You scored below the passing grade of 70%. You can retake the quiz to improve your score."
+                      : "You have passed this quiz. You can retake it anytime to practice or try for a better score."}
+                  </p>
+                  <Link
+                    href={`/courses/${params.courseId}/chapters/${params.chapterId}/quiz/${params.quizId}?retake=1`}
+                  >
+                    <Button className="bg-blue-600 hover:bg-blue-700">
                       Retake Quiz
                     </Button>
-                  </div>
-                )}
+                  </Link>
+                </div>
 
                 {/* Question Review */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Question Review</h3>
+                  <h3 className="text-lg font-semibold mb-4">
+                    Question Review
+                  </h3>
                   <div className="space-y-4">
                     {quiz.questions.map((question, index) => {
-                      const userAnswer = userAttempt.answers && typeof userAttempt.answers === 'object' 
-                        ? (userAttempt.answers as any)[question.id] 
-                        : null;
+                      const userAnswer =
+                        userAttempt.answers &&
+                        typeof userAttempt.answers === "object"
+                          ? (userAttempt.answers as any)[question.id]
+                          : null;
                       const isCorrect = userAnswer === question.answer;
-                      
+
                       return (
-                        <div key={question.id} className="border rounded-lg p-4">
+                        <div
+                          key={question.id}
+                          className="border rounded-lg p-4"
+                        >
                           <div className="flex items-start justify-between mb-3">
                             <h4 className="font-medium">
                               Question {index + 1}: {question.text}
                             </h4>
-                            <Badge variant={isCorrect ? "default" : "destructive"}>
+                            <Badge
+                              variant={isCorrect ? "default" : "destructive"}
+                            >
                               {isCorrect ? "Correct" : "Incorrect"}
                             </Badge>
                           </div>
-                          
+
                           {question.type === "MCQ" && (
                             <div className="space-y-2 text-sm">
-                              {[question.option1, question.option2, question.option3, question.option4]
+                              {[
+                                question.option1,
+                                question.option2,
+                                question.option3,
+                                question.option4,
+                              ]
                                 .filter(Boolean)
                                 .map((option, optIndex) => (
-                                <div
-                                  key={optIndex}
-                                  className={`p-2 rounded ${
-                                    option === question.answer
-                                      ? "bg-green-100 border border-green-300"
-                                      : option === userAnswer && !isCorrect
-                                      ? "bg-red-100 border border-red-300"
-                                      : "bg-gray-50"
-                                  }`}
-                                >
-                                  <span className="flex items-center gap-2">
-                                    {option === question.answer && (
-                                      <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                    )}
-                                    {option === userAnswer && !isCorrect && (
-                                      <AlertCircle className="h-4 w-4 text-red-600" />
-                                    )}
-                                    {option}
-                                  </span>
-                                </div>
-                              ))}
+                                  <div
+                                    key={optIndex}
+                                    className={`p-2 rounded ${
+                                      option === question.answer
+                                        ? "bg-green-100 border border-green-300"
+                                        : option === userAnswer && !isCorrect
+                                        ? "bg-red-100 border border-red-300"
+                                        : "bg-gray-50"
+                                    }`}
+                                  >
+                                    <span className="flex items-center gap-2">
+                                      {option === question.answer && (
+                                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                      )}
+                                      {option === userAnswer && !isCorrect && (
+                                        <AlertCircle className="h-4 w-4 text-red-600" />
+                                      )}
+                                      {option}
+                                    </span>
+                                  </div>
+                                ))}
                             </div>
                           )}
-                          
+
                           <div className="mt-3 text-sm text-gray-600">
-                            <p><strong>Your answer:</strong> {userAnswer || "No answer"}</p>
-                            <p><strong>Correct answer:</strong> {question.answer}</p>
+                            <p>
+                              <strong>Your answer:</strong>{" "}
+                              {userAnswer || "No answer"}
+                            </p>
+                            <p>
+                              <strong>Correct answer:</strong> {question.answer}
+                            </p>
                           </div>
                         </div>
                       );

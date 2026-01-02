@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { 
-  MessageSquare, 
-  X, 
-  Send, 
-  Users, 
-  Pin, 
+import {
+  MessageSquare,
+  X,
+  Send,
+  Users,
+  Pin,
   Trash2,
   Shield,
   Eye,
   EyeOff,
-  Settings
+  Settings,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -24,13 +24,13 @@ import toast from "react-hot-toast";
 
 interface ChatMessage {
   id: string;
-  content: string;
+  message: string;
+  userId: string;
   user: {
-    id: string;
-    name: string;
-    image?: string;
+    name: string | null;
+    image?: string | null;
   };
-  timestamp: Date;
+  createdAt: Date;
   isPinned?: boolean;
   isFromTeacher?: boolean;
 }
@@ -44,13 +44,13 @@ interface TeacherLiveChatProps {
   onClose: () => void;
 }
 
-export const TeacherLiveChat = ({ 
-  courseId, 
-  liveSessionId, 
+export const TeacherLiveChat = ({
+  courseId,
+  liveSessionId,
   teacherName,
   teacherImage,
-  isVisible, 
-  onClose 
+  isVisible,
+  onClose,
 }: TeacherLiveChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -63,11 +63,18 @@ export const TeacherLiveChat = ({
 
   const loadMessagesCallback = React.useCallback(async () => {
     try {
-      const response = await fetch(`/api/courses/${courseId}/live/${liveSessionId}/messages`);
+      const response = await fetch(
+        `/api/courses/${courseId}/live/${liveSessionId}/messages`
+      );
       if (response.ok) {
         const data = await response.json();
-        setMessages(data.messages || []);
-        setViewerCount(data.viewerCount || 0);
+        const msgs = Array.isArray(data) ? data : data.messages;
+        if (msgs) {
+          setMessages(msgs);
+        }
+        if (!Array.isArray(data)) {
+          setViewerCount(data.viewerCount ?? 0);
+        }
       }
     } catch (error) {
       console.error("Error loading messages:", error);
@@ -89,11 +96,18 @@ export const TeacherLiveChat = ({
 
   const loadMessages = async () => {
     try {
-      const response = await fetch(`/api/courses/${courseId}/live/${liveSessionId}/messages`);
+      const response = await fetch(
+        `/api/courses/${courseId}/live/${liveSessionId}/messages`
+      );
       if (response.ok) {
         const data = await response.json();
-        setMessages(data.messages || []);
-        setViewerCount(data.viewerCount || 0);
+        const msgs = Array.isArray(data) ? data : data.messages;
+        if (msgs) {
+          setMessages(msgs);
+        }
+        if (!Array.isArray(data)) {
+          setViewerCount(data.viewerCount ?? 0);
+        }
       }
     } catch (error) {
       console.error("Error loading messages:", error);
@@ -105,31 +119,23 @@ export const TeacherLiveChat = ({
 
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/courses/${courseId}/live/${liveSessionId}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: newMessage.trim(),
-          isFromTeacher: true
-        }),
-      });
+      const response = await fetch(
+        `/api/courses/${courseId}/live/${liveSessionId}/messages`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: newMessage.trim(),
+            isFromTeacher: true,
+          }),
+        }
+      );
 
       if (response.ok) {
-        const newMsg: ChatMessage = {
-          id: Date.now().toString(),
-          content: newMessage.trim(),
-          user: {
-            id: "teacher",
-            name: teacherName,
-            image: teacherImage
-          },
-          timestamp: new Date(),
-          isFromTeacher: true
-        };
-
-        setMessages(prev => [...prev, newMsg]);
+        // Reload from server so teacher sees same data shape as students
+        await loadMessages();
         setNewMessage("");
       }
     } catch (error) {
@@ -142,10 +148,14 @@ export const TeacherLiveChat = ({
 
   const pinMessage = async (messageId: string) => {
     try {
-      await axios.patch(`/api/courses/${courseId}/live/${liveSessionId}/messages/${messageId}/pin`);
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId ? { ...msg, isPinned: !msg.isPinned } : msg
-      ));
+      await axios.patch(
+        `/api/courses/${courseId}/live/${liveSessionId}/messages/${messageId}/pin`
+      );
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, isPinned: !msg.isPinned } : msg
+        )
+      );
       toast.success("Message pinned for all viewers");
     } catch (error) {
       console.error("Error pinning message:", error);
@@ -155,8 +165,10 @@ export const TeacherLiveChat = ({
 
   const deleteMessage = async (messageId: string) => {
     try {
-      await axios.delete(`/api/courses/${courseId}/live/${liveSessionId}/messages/${messageId}`);
-      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+      await axios.delete(
+        `/api/courses/${courseId}/live/${liveSessionId}/messages/${messageId}`
+      );
+      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
       toast.success("Message deleted");
     } catch (error) {
       console.error("Error deleting message:", error);
@@ -166,11 +178,16 @@ export const TeacherLiveChat = ({
 
   const toggleChat = async () => {
     try {
-      await axios.patch(`/api/courses/${courseId}/live/${liveSessionId}/chat-settings`, {
-        enabled: !isChatEnabled
-      });
+      await axios.patch(
+        `/api/courses/${courseId}/live/${liveSessionId}/chat-settings`,
+        {
+          enabled: !isChatEnabled,
+        }
+      );
       setIsChatEnabled(!isChatEnabled);
-      toast.success(`Chat ${!isChatEnabled ? 'enabled' : 'disabled'} for students`);
+      toast.success(
+        `Chat ${!isChatEnabled ? "enabled" : "disabled"} for students`
+      );
     } catch (error) {
       console.error("Error toggling chat:", error);
       toast.error("Failed to update chat settings");
@@ -233,7 +250,9 @@ export const TeacherLiveChat = ({
 
         {!isChatEnabled && (
           <div className="mt-2 p-2 bg-orange-500/20 rounded-lg">
-            <p className="text-xs text-orange-200">Chat disabled for students</p>
+            <p className="text-xs text-orange-200">
+              Chat disabled for students
+            </p>
           </div>
         )}
       </div>
@@ -245,7 +264,9 @@ export const TeacherLiveChat = ({
             <div className="text-center py-8">
               <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-3" />
               <p className="text-gray-400 text-sm">No messages yet</p>
-              <p className="text-gray-500 text-xs">Be the first to start the conversation</p>
+              <p className="text-gray-500 text-xs">
+                Be the first to start the conversation
+              </p>
             </div>
           ) : (
             messages.map((message) => (
@@ -255,12 +276,16 @@ export const TeacherLiveChat = ({
                   message.isFromTeacher
                     ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 ml-4"
                     : "bg-gray-800/50 border border-gray-700/50"
-                } ${
-                  message.isPinned ? "ring-2 ring-yellow-500/50" : ""
-                } ${
-                  selectedMessage === message.id ? "ring-2 ring-blue-500/50" : ""
+                } ${message.isPinned ? "ring-2 ring-yellow-500/50" : ""} ${
+                  selectedMessage === message.id
+                    ? "ring-2 ring-blue-500/50"
+                    : ""
                 }`}
-                onClick={() => setSelectedMessage(selectedMessage === message.id ? null : message.id)}
+                onClick={() =>
+                  setSelectedMessage(
+                    selectedMessage === message.id ? null : message.id
+                  )
+                }
               >
                 {message.isPinned && (
                   <div className="absolute -top-2 -right-2">
@@ -281,9 +306,11 @@ export const TeacherLiveChat = ({
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-sm font-medium ${
-                        message.isFromTeacher ? "text-blue-300" : "text-white"
-                      }`}>
+                      <span
+                        className={`text-sm font-medium ${
+                          message.isFromTeacher ? "text-blue-300" : "text-white"
+                        }`}
+                      >
                         {message.user.name}
                       </span>
                       {message.isFromTeacher && (
@@ -294,8 +321,8 @@ export const TeacherLiveChat = ({
                       )}
                       <span className="text-xs text-gray-500">
                         {new Date(message.timestamp).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit'
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </span>
                     </div>

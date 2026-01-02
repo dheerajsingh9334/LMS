@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Save, 
-  Download, 
-  FileText, 
-  Clock, 
-  BookOpen, 
-  Video, 
+import {
+  Save,
+  Download,
+  FileText,
+  Clock,
+  BookOpen,
+  Video,
   Radio,
   Trash2,
   Star,
@@ -24,9 +24,9 @@ import {
   Plus,
   Edit3,
   Archive,
-  MoreHorizontal
+  MoreHorizontal,
 } from "lucide-react";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -45,12 +45,12 @@ import dynamic from "next/dynamic";
 import { format } from "date-fns";
 
 // Import quill styles
-import 'react-quill/dist/quill.snow.css';
+import "react-quill/dist/quill.snow.css";
 
 // Dynamically import ReactQuill to avoid SSR issues
-const ReactQuill = dynamic(() => import('react-quill'), { 
+const ReactQuill = dynamic(() => import("react-quill"), {
   ssr: false,
-  loading: () => <div className="h-32 bg-gray-100 rounded animate-pulse" />
+  loading: () => <div className="h-32 bg-gray-100 rounded animate-pulse" />,
 });
 
 interface StudentNote {
@@ -100,7 +100,7 @@ export const UniversalNotes = ({
   context,
   timestamp,
   liveSessionId,
-  className = ""
+  className = "",
 }: UniversalNotesProps) => {
   const [notes, setNotes] = useState<StudentNote[]>([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -110,7 +110,7 @@ export const UniversalNotes = ({
   const [filterContext, setFilterContext] = useState<string>("ALL");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
-  
+
   // New note form state
   const [newNote, setNewNote] = useState({
     title: "",
@@ -118,9 +118,9 @@ export const UniversalNotes = ({
     richContent: "",
     color: "",
     tags: [] as string[],
-    isBookmarked: false
+    isBookmarked: false,
   });
-  
+
   // Draft save interval
   const draftSaveInterval = useRef<NodeJS.Timeout | null>(null);
   const lastSavedContent = useRef<string>("");
@@ -128,51 +128,34 @@ export const UniversalNotes = ({
   // Quill modules configuration
   const quillModules = {
     toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      ['blockquote', 'code-block'],
-      ['link', 'image'],
-      ['clean']
+      [{ header: [1, 2, 3, false] }],
+      ["bold", "italic", "underline", "strike"],
+      [{ color: [] }, { background: [] }],
+      [{ list: "ordered" }, { list: "bullet" }],
+      ["blockquote", "code-block"],
+      ["link", "image"],
+      ["clean"],
     ],
   };
 
-  // Load notes on component mount
-  useEffect(() => {
-    loadNotes();
-  }, [courseId, chapterId, context]);
-
-  // Auto-save drafts
-  useEffect(() => {
-    if (editingNote && newNote.content !== lastSavedContent.current) {
-      if (draftSaveInterval.current) {
-        clearTimeout(draftSaveInterval.current);
-      }
-      
-      draftSaveInterval.current = setTimeout(() => {
-        saveDraft();
-      }, 2000); // Auto-save after 2 seconds of inactivity
-    }
-
-    return () => {
-      if (draftSaveInterval.current) {
-        clearTimeout(draftSaveInterval.current);
-      }
-    };
-  }, [newNote.content, editingNote]);
-
-  const loadNotes = async () => {
+  const loadNotes = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         courseId,
-        context,
         ...(chapterId && { chapterId }),
-        ...(liveSessionId && { liveSessionId })
+        ...(liveSessionId && { liveSessionId }),
       });
 
-      const response = await fetch(`/api/student-notes?${params}`);
+      // By default, we scope notes by context when tied to a
+      // specific chapter or live session (VIDEO / LIVE_STREAM usage).
+      // For course-level views (no chapter/liveSession), we omit
+      // context so all notes for the course are shown together.
+      if (chapterId || liveSessionId || context !== "GENERAL") {
+        params.set("context", context);
+      }
+
+      const response = await fetch(`/api/student-notes?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         setNotes(data);
@@ -183,9 +166,9 @@ export const UniversalNotes = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseId, chapterId, context, liveSessionId]);
 
-  const saveDraft = async () => {
+  const saveDraft = useCallback(async () => {
     if (!editingNote || !newNote.content) return;
 
     try {
@@ -204,16 +187,40 @@ export const UniversalNotes = ({
         lastSavedContent.current = newNote.content;
         // Update the note in the list
         const updatedNote = await response.json();
-        setNotes(prev => prev.map(note => 
-          note.id === editingNote ? updatedNote : note
-        ));
+        setNotes((prev) =>
+          prev.map((note) => (note.id === editingNote ? updatedNote : note))
+        );
       }
     } catch (error) {
       console.error("Failed to save draft:", error);
     } finally {
       setSaving(null);
     }
-  };
+  }, [editingNote, newNote.content, newNote.richContent, newNote.title]);
+
+  // Load notes on component mount
+  useEffect(() => {
+    loadNotes();
+  }, [loadNotes]);
+
+  // Auto-save drafts
+  useEffect(() => {
+    if (editingNote && newNote.content !== lastSavedContent.current) {
+      if (draftSaveInterval.current) {
+        clearTimeout(draftSaveInterval.current);
+      }
+
+      draftSaveInterval.current = setTimeout(() => {
+        saveDraft();
+      }, 2000); // Auto-save after 2 seconds of inactivity
+    }
+
+    return () => {
+      if (draftSaveInterval.current) {
+        clearTimeout(draftSaveInterval.current);
+      }
+    };
+  }, [newNote.content, editingNote, saveDraft]);
 
   const createNote = async () => {
     if (!newNote.title.trim() && !newNote.content.trim()) {
@@ -238,13 +245,13 @@ export const UniversalNotes = ({
           color: newNote.color,
           tags: newNote.tags,
           isBookmarked: newNote.isBookmarked,
-          status: "SAVED"
+          status: "SAVED",
         }),
       });
 
       if (response.ok) {
         const createdNote = await response.json();
-        setNotes(prev => [createdNote, ...prev]);
+        setNotes((prev) => [createdNote, ...prev]);
         resetNewNote();
         setIsCreating(false);
         toast.success("Note saved successfully!");
@@ -272,15 +279,15 @@ export const UniversalNotes = ({
           color: newNote.color,
           tags: newNote.tags,
           isBookmarked: newNote.isBookmarked,
-          status: "SAVED"
+          status: "SAVED",
         }),
       });
 
       if (response.ok) {
         const updatedNote = await response.json();
-        setNotes(prev => prev.map(note => 
-          note.id === noteId ? updatedNote : note
-        ));
+        setNotes((prev) =>
+          prev.map((note) => (note.id === noteId ? updatedNote : note))
+        );
         setEditingNote(null);
         resetNewNote();
         toast.success("Note updated successfully!");
@@ -302,7 +309,7 @@ export const UniversalNotes = ({
       });
 
       if (response.ok) {
-        setNotes(prev => prev.filter(note => note.id !== noteId));
+        setNotes((prev) => prev.filter((note) => note.id !== noteId));
         toast.success("Note deleted successfully!");
       } else {
         toast.error("Failed to delete note");
@@ -315,22 +322,22 @@ export const UniversalNotes = ({
 
   const toggleBookmark = async (noteId: string) => {
     try {
-      const note = notes.find(n => n.id === noteId);
+      const note = notes.find((n) => n.id === noteId);
       if (!note) return;
 
       const response = await fetch(`/api/student-notes/${noteId}/bookmark`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          isBookmarked: !note.isBookmarked
+          isBookmarked: !note.isBookmarked,
         }),
       });
 
       if (response.ok) {
         const updatedNote = await response.json();
-        setNotes(prev => prev.map(n => 
-          n.id === noteId ? updatedNote : n
-        ));
+        setNotes((prev) =>
+          prev.map((n) => (n.id === noteId ? updatedNote : n))
+        );
       }
     } catch (error) {
       console.error("Failed to toggle bookmark:", error);
@@ -346,16 +353,16 @@ export const UniversalNotes = ({
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        const note = notes.find(n => n.id === noteId);
-        a.style.display = 'none';
+        const a = document.createElement("a");
+        const note = notes.find((n) => n.id === noteId);
+        a.style.display = "none";
         a.href = url;
-        a.download = `${note?.title || 'note'}.pdf`;
+        a.download = `${note?.title || "note"}.pdf`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        
+
         toast.success("PDF downloaded successfully!");
       } else {
         toast.error("Failed to export PDF");
@@ -373,7 +380,7 @@ export const UniversalNotes = ({
       richContent: "",
       color: "",
       tags: [],
-      isBookmarked: false
+      isBookmarked: false,
     });
   };
 
@@ -385,7 +392,7 @@ export const UniversalNotes = ({
       richContent: note.richContent || "",
       color: note.color || "",
       tags: note.tags,
-      isBookmarked: note.isBookmarked
+      isBookmarked: note.isBookmarked,
     });
     lastSavedContent.current = note.content;
   };
@@ -397,36 +404,49 @@ export const UniversalNotes = ({
   };
 
   // Filter notes based on search and filters
-  const filteredNotes = notes.filter(note => {
-    const matchesSearch = note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         note.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesStatus = filterStatus === "ALL" || 
-                         (filterStatus === "DRAFTS" && note.isDraft) ||
-                         (filterStatus === "SAVED" && !note.isDraft) ||
-                         (filterStatus === "BOOKMARKED" && note.isBookmarked);
-    
-    const matchesContext = filterContext === "ALL" || note.context === filterContext;
-    
+  const filteredNotes = notes.filter((note) => {
+    const matchesSearch =
+      note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      note.tags.some((tag) =>
+        tag.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
+    const matchesStatus =
+      filterStatus === "ALL" ||
+      (filterStatus === "DRAFTS" && note.isDraft) ||
+      (filterStatus === "SAVED" && !note.isDraft) ||
+      (filterStatus === "BOOKMARKED" && note.isBookmarked);
+
+    const matchesContext =
+      filterContext === "ALL" || note.context === filterContext;
+
     return matchesSearch && matchesStatus && matchesContext;
   });
 
   const getContextIcon = (context: string) => {
     switch (context) {
-      case "CHAPTER": return <BookOpen className="h-4 w-4" />;
-      case "VIDEO": return <Video className="h-4 w-4" />;
-      case "LIVE_STREAM": return <Radio className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
+      case "CHAPTER":
+        return <BookOpen className="h-4 w-4" />;
+      case "VIDEO":
+        return <Video className="h-4 w-4" />;
+      case "LIVE_STREAM":
+        return <Radio className="h-4 w-4" />;
+      default:
+        return <FileText className="h-4 w-4" />;
     }
   };
 
   const getContextColor = (context: string) => {
     switch (context) {
-      case "CHAPTER": return "bg-blue-100 text-blue-800";
-      case "VIDEO": return "bg-green-100 text-green-800";
-      case "LIVE_STREAM": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "CHAPTER":
+        return "bg-blue-100 text-blue-800";
+      case "VIDEO":
+        return "bg-green-100 text-green-800";
+      case "LIVE_STREAM":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -452,7 +472,8 @@ export const UniversalNotes = ({
             {timestamp && (
               <Badge variant="outline" className="ml-2">
                 <Clock className="h-3 w-3 mr-1" />
-                {Math.floor(timestamp / 60)}:{String(Math.floor(timestamp % 60)).padStart(2, '0')}
+                {Math.floor(timestamp / 60)}:
+                {String(Math.floor(timestamp % 60)).padStart(2, "0")}
               </Badge>
             )}
           </CardTitle>
@@ -465,7 +486,7 @@ export const UniversalNotes = ({
             New Note
           </Button>
         </div>
-        
+
         {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-2 mt-4">
           <div className="relative flex-1">
@@ -501,7 +522,7 @@ export const UniversalNotes = ({
           </Select>
         </div>
       </CardHeader>
-      
+
       <CardContent>
         {/* Create/Edit Note Form */}
         {(isCreating || editingNote) && (
@@ -511,9 +532,11 @@ export const UniversalNotes = ({
                 <Input
                   placeholder="Note title..."
                   value={newNote.title}
-                  onChange={(e) => setNewNote({...newNote, title: e.target.value})}
+                  onChange={(e) =>
+                    setNewNote({ ...newNote, title: e.target.value })
+                  }
                 />
-                
+
                 <div className="min-h-[200px]">
                   {ReactQuill ? (
                     <ReactQuill
@@ -521,9 +544,9 @@ export const UniversalNotes = ({
                       value={newNote.richContent}
                       onChange={(content) => {
                         setNewNote({
-                          ...newNote, 
+                          ...newNote,
                           richContent: content,
-                          content: content.replace(/<[^>]*>/g, '') // Strip HTML for plain text
+                          content: content.replace(/<[^>]*>/g, ""), // Strip HTML for plain text
                         });
                       }}
                       modules={quillModules}
@@ -532,58 +555,78 @@ export const UniversalNotes = ({
                   ) : (
                     <Textarea
                       value={newNote.content}
-                      onChange={(e) => setNewNote({
-                        ...newNote,
-                        content: e.target.value,
-                        richContent: e.target.value
-                      })}
+                      onChange={(e) =>
+                        setNewNote({
+                          ...newNote,
+                          content: e.target.value,
+                          richContent: e.target.value,
+                        })
+                      }
                       placeholder="Start writing your note..."
                       className="min-h-[200px] resize-none"
                     />
                   )}
                 </div>
-                
+
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex items-center gap-2">
                     <Palette className="h-4 w-4" />
                     {NOTE_COLORS.map((color) => (
                       <button
                         key={color.value}
-                        className={`w-6 h-6 rounded-full border-2 ${color.class} ${
-                          newNote.color === color.value ? 'border-blue-500' : 'border-gray-300'
+                        className={`w-6 h-6 rounded-full border-2 ${
+                          color.class
+                        } ${
+                          newNote.color === color.value
+                            ? "border-blue-500"
+                            : "border-gray-300"
                         }`}
-                        onClick={() => setNewNote({...newNote, color: color.value})}
+                        onClick={() =>
+                          setNewNote({ ...newNote, color: color.value })
+                        }
                         title={color.name}
                       />
                     ))}
                   </div>
-                  
+
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setNewNote({...newNote, isBookmarked: !newNote.isBookmarked})}
-                  >
-                    {newNote.isBookmarked ? 
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" /> : 
-                      <StarOff className="h-4 w-4" />
+                    onClick={() =>
+                      setNewNote({
+                        ...newNote,
+                        isBookmarked: !newNote.isBookmarked,
+                      })
                     }
+                  >
+                    {newNote.isBookmarked ? (
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    ) : (
+                      <StarOff className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <Button
-                    onClick={editingNote ? () => updateNote(editingNote) : createNote}
+                    onClick={
+                      editingNote ? () => updateNote(editingNote) : createNote
+                    }
                     disabled={saving !== null}
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {saving === (editingNote || "new") ? "Saving..." : "Save Note"}
+                    {saving === (editingNote || "new")
+                      ? "Saving..."
+                      : "Save Note"}
                   </Button>
                   <Button variant="outline" onClick={cancelEditing}>
                     Cancel
                   </Button>
                   {editingNote && (
                     <Badge variant="secondary" className="ml-auto">
-                      {saving === editingNote ? "Saving draft..." : "Auto-saving"}
+                      {saving === editingNote
+                        ? "Saving draft..."
+                        : "Auto-saving"}
                     </Badge>
                   )}
                 </div>
@@ -591,7 +634,7 @@ export const UniversalNotes = ({
             </CardContent>
           </Card>
         )}
-        
+
         {/* Notes List */}
         <div className="space-y-4">
           {filteredNotes.length === 0 ? (
@@ -602,9 +645,11 @@ export const UniversalNotes = ({
             </div>
           ) : (
             filteredNotes.map((note) => (
-              <Card 
-                key={note.id} 
-                className={`${note.color ? `bg-${note.color}-50` : ''} hover:shadow-md transition-shadow`}
+              <Card
+                key={note.id}
+                className={`${
+                  note.color ? `bg-${note.color}-50` : ""
+                } hover:shadow-md transition-shadow`}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-2">
@@ -613,11 +658,9 @@ export const UniversalNotes = ({
                       {note.isBookmarked && (
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                       )}
-                      {note.isDraft && (
-                        <Badge variant="outline">Draft</Badge>
-                      )}
+                      {note.isDraft && <Badge variant="outline">Draft</Badge>}
                     </div>
-                    
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
@@ -629,11 +672,19 @@ export const UniversalNotes = ({
                           <Edit3 className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toggleBookmark(note.id)}>
+                        <DropdownMenuItem
+                          onClick={() => toggleBookmark(note.id)}
+                        >
                           {note.isBookmarked ? (
-                            <><StarOff className="h-4 w-4 mr-2" />Remove Bookmark</>
+                            <>
+                              <StarOff className="h-4 w-4 mr-2" />
+                              Remove Bookmark
+                            </>
                           ) : (
-                            <><Star className="h-4 w-4 mr-2" />Add Bookmark</>
+                            <>
+                              <Star className="h-4 w-4 mr-2" />
+                              Add Bookmark
+                            </>
                           )}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => exportToPDF(note.id)}>
@@ -641,7 +692,7 @@ export const UniversalNotes = ({
                           Export PDF
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => deleteNote(note.id)}
                           className="text-red-600"
                         >
@@ -651,13 +702,18 @@ export const UniversalNotes = ({
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                  
+
                   {/* Note Content */}
                   <div className="prose prose-sm max-w-none mb-3 [&>span]:block [&>p]:m-0">
                     {note.richContent ? (
-                      <div 
-                        dangerouslySetInnerHTML={{ 
-                          __html: note.richContent.replace(/<div([^>]*)>/g, '<span$1 style="display: block;">').replace(/<\/div>/g, '</span>')
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: note.richContent
+                            .replace(
+                              /<div([^>]*)>/g,
+                              '<span$1 style="display: block;">'
+                            )
+                            .replace(/<\/div>/g, "</span>"),
                         }}
                         suppressHydrationWarning
                       />
@@ -665,29 +721,39 @@ export const UniversalNotes = ({
                       <p>{note.content}</p>
                     )}
                   </div>
-                  
+
                   {/* Metadata */}
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <div className="flex items-center gap-2">
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={getContextColor(note.context)}
                       >
                         {getContextIcon(note.context)}
-                        <span className="ml-1">{note.context.replace('_', ' ')}</span>
+                        <span className="ml-1">
+                          {note.context.replace("_", " ")}
+                        </span>
                       </Badge>
-                      
+
                       {note.timestamp && (
                         <Badge variant="outline">
                           <Clock className="h-3 w-3 mr-1" />
-                          {Math.floor(note.timestamp / 60)}:{String(Math.floor(note.timestamp % 60)).padStart(2, '0')}
+                          {Math.floor(note.timestamp / 60)}:
+                          {String(Math.floor(note.timestamp % 60)).padStart(
+                            2,
+                            "0"
+                          )}
                         </Badge>
                       )}
-                      
+
                       {note.tags.length > 0 && (
                         <div className="flex gap-1">
                           {note.tags.map((tag, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
+                            <Badge
+                              key={index}
+                              variant="secondary"
+                              className="text-xs"
+                            >
                               <Tag className="h-2 w-2 mr-1" />
                               {tag}
                             </Badge>
@@ -695,9 +761,10 @@ export const UniversalNotes = ({
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="text-xs">
-                      {note.isDraft ? "Last saved" : "Created"}: {format(new Date(note.updatedAt), 'MMM d, yyyy HH:mm')}
+                      {note.isDraft ? "Last saved" : "Created"}:{" "}
+                      {format(new Date(note.updatedAt), "MMM d, yyyy HH:mm")}
                     </div>
                   </div>
                 </CardContent>

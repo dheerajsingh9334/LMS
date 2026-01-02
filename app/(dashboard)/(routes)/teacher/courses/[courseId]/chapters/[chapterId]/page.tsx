@@ -1,6 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Eye, LayoutDashboard, PlusCircle, Video, FileText } from "lucide-react";
+import {
+  ArrowLeft,
+  Eye,
+  LayoutDashboard,
+  PlusCircle,
+  Video,
+  FileText,
+} from "lucide-react";
 
 import { db } from "@/lib/db";
 import { IconBadge } from "@/components/icon-badge";
@@ -17,9 +24,9 @@ import { ChapterPreviewToggle } from "../../_components/chapter-preview-toggle";
 import { currentUser } from "@/lib/auth";
 
 const ChapterIdPage = async ({
-  params
+  params,
 }: {
-  params: { courseId: string; chapterId: string }
+  params: { courseId: string; chapterId: string };
 }) => {
   const user = await currentUser();
   let userId = user?.id ?? "";
@@ -31,7 +38,7 @@ const ChapterIdPage = async ({
   const chapter = await db.chapter.findUnique({
     where: {
       id: params.chapterId,
-      courseId: params.courseId
+      courseId: params.courseId,
     },
     select: {
       id: true,
@@ -47,35 +54,36 @@ const ChapterIdPage = async ({
       updatedAt: true,
       chapterVideos: {
         orderBy: {
-          position: "asc"
-        }
+          position: "asc",
+        },
       },
       quizzes: {
         include: {
-          questions: true
-        }
+          questions: true,
+        },
       },
       assignments: {
         include: {
           _count: {
             select: {
-              submissions: true
-            }
-          }
-        }
-      }
-    }
+              submissions: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!chapter) {
-    return redirect("/")
+    return redirect("/");
   }
 
-  const isQuizCompleted = (quiz: { questions: string | any[]; }) => {
+  const isQuizCompleted = (quiz: { questions: string | any[] }) => {
     return quiz.questions.length > 0;
-  }
+  };
 
-  const isQuizzesComplete = chapter.quizzes.length > 0 && chapter.quizzes.every(isQuizCompleted);
+  const isQuizzesComplete =
+    chapter.quizzes.length > 0 && chapter.quizzes.every(isQuizCompleted);
 
   const requiredFields = [
     chapter.title,
@@ -85,7 +93,9 @@ const ChapterIdPage = async ({
   ];
 
   const totalFields = requiredFields.length;
-  const completedFields = requiredFields.filter(field => field !== null).length;
+  const completedFields = requiredFields.filter(
+    (field) => field !== null
+  ).length;
 
   const completionText = `(${completedFields}/${totalFields})`;
 
@@ -111,9 +121,7 @@ const ChapterIdPage = async ({
             </Link>
             <div className="flex items-center justify-between w-full">
               <div className="flex flex-col gap-y-2">
-                <h1 className="text-2xl font-medium">
-                  Chapter Creation
-                </h1>
+                <h1 className="text-2xl font-medium">Chapter Creation</h1>
                 <span className="text-sm text-slate-700">
                   Complete all fields {completionText}
                 </span>
@@ -132,9 +140,7 @@ const ChapterIdPage = async ({
             <div>
               <div className="flex items-center gap-x-2">
                 <IconBadge icon={LayoutDashboard} />
-                <h2 className="text-xl">
-                  Customize your chapter
-                </h2>
+                <h2 className="text-xl">Customize your chapter</h2>
               </div>
               <ChapterTitleForm
                 initialData={chapter}
@@ -148,28 +154,28 @@ const ChapterIdPage = async ({
               />
               <ChapterQuizForm
                 initialData={chapter}
-                chapterId={params.chapterId} 
-                courseId={params.courseId} />
+                chapterId={params.chapterId}
+                courseId={params.courseId}
+              />
               <ChapterAssignmentForm
                 initialData={chapter}
                 chapterId={params.chapterId}
-                courseId={params.courseId} />
+                courseId={params.courseId}
+              />
             </div>
           </div>
           <div className="space-y-6">
             <div>
               <div className="flex items-center gap-x-2">
                 <IconBadge icon={Video} />
-                <h2 className="text-xl">
-                  Add a video
-                </h2>
+                <h2 className="text-xl">Add a video</h2>
               </div>
               <ChapterVideoForm
                 initialData={chapter}
                 chapterId={params.chapterId}
                 courseId={params.courseId}
               />
-              
+
               {/* Multiple Videos Form */}
               <ChapterVideosForm
                 initialData={chapter}
@@ -180,13 +186,12 @@ const ChapterIdPage = async ({
             <div>
               <div className="flex items-center gap-x-2">
                 <IconBadge icon={Eye} />
-                <h2 className="text-xl">
-                  Preview Access
-                </h2>
+                <h2 className="text-xl">Preview Access</h2>
               </div>
               <div className="mt-2">
                 <p className="text-sm text-slate-600 mb-4">
-                  Allow students to preview this chapter for free before enrolling in the course.
+                  Allow students to preview this chapter for free before
+                  enrolling in the course.
                 </p>
                 <ChapterPreviewToggle
                   courseId={params.courseId}
@@ -197,9 +202,9 @@ const ChapterIdPage = async ({
             </div>
           </div>
         </div>
-      </div >
+      </div>
     </>
   );
-}
+};
 
 export default ChapterIdPage;

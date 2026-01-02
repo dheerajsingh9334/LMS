@@ -1,17 +1,7 @@
 "use client";
 
-import { UserInfo } from "@/components/user-info";
-import { useCurrentUser } from "@/hooks/use-current-user";
+import { notFound } from "next/navigation";
 
-const ClientPage = () => {
-  const user = useCurrentUser();
-
-  return ( 
-    <UserInfo
-      label="📱 Client component"
-      user={user}
-    />
-   );
+export default function ClientPage() {
+  notFound();
 }
- 
-export default ClientPage;

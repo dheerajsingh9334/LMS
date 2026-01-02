@@ -8,16 +8,19 @@ interface FinalExamPageProps {
   params: {
     courseId: string;
   };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-const FinalExamPage = async ({ params }: FinalExamPageProps) => {
+const FinalExamPage = async ({ params, searchParams }: FinalExamPageProps) => {
   const user = await currentUser();
-  
+
   if (!user?.id) {
     return redirect("/");
   }
 
   const userId = user.id;
+
+  const isRetake = searchParams?.retake === "1";
 
   // Get course information
   const course = await db.course.findUnique({
@@ -27,10 +30,25 @@ const FinalExamPage = async ({ params }: FinalExamPageProps) => {
     },
     include: {
       chapters: {
+        where: {
+          isPublished: true,
+        },
         include: {
           userProgress: {
             where: {
               userId,
+            },
+          },
+          quizzes: {
+            where: {
+              isPublished: true,
+            },
+            include: {
+              quizAttempts: {
+                where: {
+                  userId,
+                },
+              },
             },
           },
         },
@@ -50,12 +68,16 @@ const FinalExamPage = async ({ params }: FinalExamPageProps) => {
     return redirect(`/courses/${params.courseId}`);
   }
 
-  // Check if all chapters are completed
-  const completedChapters = course.chapters.filter(chapter =>
-    chapter.userProgress?.[0]?.isCompleted
-  );
+  // Check if all chapter requirements are met:
+  // for each published chapter, all its published quizzes must have at least one attempt.
+  const allChaptersCompleted = course.chapters.every((chapter) => {
+    if (chapter.quizzes.length === 0) {
+      // No quizzes in this chapter: no blocking requirement
+      return true;
+    }
 
-  const allChaptersCompleted = completedChapters.length === course.chapters.length;
+    return chapter.quizzes.every((quiz) => quiz.quizAttempts.length > 0);
+  });
 
   // Get published final exam
   const finalExam = await db.finalExam.findFirst({
@@ -77,20 +99,23 @@ const FinalExamPage = async ({ params }: FinalExamPageProps) => {
       <div className="flex flex-col items-center justify-center min-h-screen p-6">
         <h1 className="text-2xl font-bold mb-4">Final Exam Not Available</h1>
         <p className="text-gray-600 text-center max-w-md">
-          The final exam for this course is not yet available. Please contact your instructor for more information.
+          The final exam for this course is not yet available. Please contact
+          your instructor for more information.
         </p>
       </div>
     );
   }
 
-  // Check for existing attempt
-  const existingAttempt = await db.finalExamAttempt.findFirst({
-    where: {
-      userId,
-      courseId: params.courseId,
-      finalExamId: finalExam.id,
-    },
-  });
+  // Check for existing attempt (only when not explicitly retaking)
+  const existingAttempt = isRetake
+    ? null
+    : await db.finalExamAttempt.findFirst({
+        where: {
+          userId,
+          courseId: params.courseId,
+          finalExamId: finalExam.id,
+        },
+      });
 
   // These variables are not needed for StudentFinalExam component
   // but we keep allChaptersCompleted for the component prop

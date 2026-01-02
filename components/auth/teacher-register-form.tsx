@@ -65,7 +65,7 @@ export const TeacherRegisterForm = () => {
           // Redirect to login after 2 seconds
           setTimeout(() => {
             router.push("/auth/teacher/login");
-          }, 2000);
+          }, 1000);
         }
       });
     });
@@ -199,7 +199,7 @@ export const TeacherRegisterForm = () => {
         {/* Back to Home */}
         <div className="text-center mt-6">
           <Link
-            href="/"
+            href="auth/teacher/login"
             className="text-sm text-gray-600 hover:text-gray-900 underline"
           >
             ← Back to Home

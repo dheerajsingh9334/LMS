@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { FileUpload } from "@/components/file-upload";
+import { Label } from "@/components/ui/label";
 
 interface ChapterVideo {
   id: string;
@@ -49,7 +50,9 @@ export const ChapterVideosForm = ({
 }: ChapterVideosFormProps) => {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [videos, setVideos] = useState<ChapterVideo[]>(initialData.chapterVideos || []);
+  const [videos, setVideos] = useState<ChapterVideo[]>(
+    initialData.chapterVideos || []
+  );
 
   const router = useRouter();
 
@@ -65,10 +68,13 @@ export const ChapterVideosForm = ({
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const response = await axios.post(`/api/courses/${courseId}/chapters/${chapterId}/videos`, values);
+      const response = await axios.post(
+        `/api/courses/${courseId}/chapters/${chapterId}/videos`,
+        values
+      );
       const newVideo = response.data;
       setVideos([...videos, newVideo]);
-      
+
       toast.success("Video added");
       form.reset();
       setIsCreating(false);
@@ -81,8 +87,10 @@ export const ChapterVideosForm = ({
   const onDelete = async (videoId: string) => {
     try {
       setIsUpdating(true);
-      await axios.delete(`/api/courses/${courseId}/chapters/${chapterId}/videos/${videoId}`);
-      setVideos(videos.filter(v => v.id !== videoId));
+      await axios.delete(
+        `/api/courses/${courseId}/chapters/${chapterId}/videos/${videoId}`
+      );
+      setVideos(videos.filter((v) => v.id !== videoId));
       toast.success("Video deleted");
       router.refresh();
     } catch {
@@ -95,12 +103,15 @@ export const ChapterVideosForm = ({
   const onEdit = async (videoId: string, title: string, videoUrl: string) => {
     try {
       setIsUpdating(true);
-      const response = await axios.patch(`/api/courses/${courseId}/chapters/${chapterId}/videos/${videoId}`, {
-        title,
-        videoUrl
-      });
-      
-      setVideos(videos.map(v => v.id === videoId ? response.data : v));
+      const response = await axios.patch(
+        `/api/courses/${courseId}/chapters/${chapterId}/videos/${videoId}`,
+        {
+          title,
+          videoUrl,
+        }
+      );
+
+      setVideos(videos.map((v) => (v.id === videoId ? response.data : v)));
       toast.success("Video updated");
       router.refresh();
     } catch {
@@ -156,24 +167,37 @@ export const ChapterVideosForm = ({
               name="videoUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormControl>
-                    <FileUpload
-                      endpoint="chapterVideo"
-                      onChange={(url) => {
-                        if (url) {
-                          field.onChange(url);
-                        }
-                      }}
-                    />
-                  </FormControl>
+                  <div className="space-y-2">
+                    <FormControl>
+                      <div className="space-y-2">
+                        <FileUpload
+                          endpoint="chapterVideo"
+                          onChange={(url) => {
+                            if (url) {
+                              field.onChange(url);
+                            }
+                          }}
+                        />
+                        <div className="text-xs text-muted-foreground">
+                          Upload a video file from your computer
+                        </div>
+                        <div className="text-xs text-muted-foreground font-medium mt-2">
+                          Or paste a video URL
+                        </div>
+                        <Input
+                          placeholder="https://... (YouTube, Vimeo, direct MP4, etc.)"
+                          disabled={isSubmitting}
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
+                      </div>
+                    </FormControl>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button
-              disabled={!isValid || isSubmitting}
-              type="submit"
-            >
+            <Button disabled={!isValid || isSubmitting} type="submit">
               Add Video
             </Button>
           </form>
@@ -216,7 +240,13 @@ interface VideoItemProps {
   disabled: boolean;
 }
 
-const VideoItem = ({ video, index, onDelete, onEdit, disabled }: VideoItemProps) => {
+const VideoItem = ({
+  video,
+  index,
+  onDelete,
+  onEdit,
+  disabled,
+}: VideoItemProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(video.title);
   const [videoUrl, setVideoUrl] = useState(video.videoUrl);
@@ -237,7 +267,7 @@ const VideoItem = ({ video, index, onDelete, onEdit, disabled }: VideoItemProps)
       <div className="flex items-center gap-x-2 flex-1">
         <GripVertical className="h-4 w-4" />
         <span className="font-medium">{index + 1}.</span>
-        
+
         {isEditing ? (
           <div className="flex-1 space-y-2">
             <Input
@@ -246,19 +276,36 @@ const VideoItem = ({ video, index, onDelete, onEdit, disabled }: VideoItemProps)
               placeholder="Video title..."
               disabled={disabled}
             />
-            <FileUpload
-              endpoint="chapterVideo"
-              onChange={(url) => {
-                if (url) {
-                  setVideoUrl(url);
-                }
-              }}
-            />
+            <div className="space-y-2">
+              <Label className="text-xs">Video source</Label>
+              <FileUpload
+                endpoint="chapterVideo"
+                onChange={(url) => {
+                  if (url) {
+                    setVideoUrl(url);
+                  }
+                }}
+              />
+              <div className="text-xs text-muted-foreground font-medium mt-1">
+                Or paste a video URL
+              </div>
+              <Input
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://... (YouTube, Vimeo, direct MP4, etc.)"
+                disabled={disabled}
+              />
+            </div>
             <div className="flex gap-2">
               <Button size="sm" onClick={handleSave} disabled={disabled}>
                 Save
               </Button>
-              <Button size="sm" variant="outline" onClick={handleCancel} disabled={disabled}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={disabled}
+              >
                 Cancel
               </Button>
             </div>

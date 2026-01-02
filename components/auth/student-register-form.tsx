@@ -32,9 +32,7 @@ const StudentRegisterSchema = z.object({
   password: z.string().min(6, {
     message: "Minimum 6 characters required",
   }),
-  rollNo: z.string().min(1, {
-    message: "Roll number is required for students",
-  }),
+  rollNo: z.string().optional(),
 });
 
 export const StudentRegisterForm = () => {
@@ -69,7 +67,7 @@ export const StudentRegisterForm = () => {
           // Redirect to login after 2 seconds
           setTimeout(() => {
             router.push("/auth/student/login");
-          }, 2000);
+          }, 1000);
         }
       });
     });
@@ -221,8 +219,8 @@ export const StudentRegisterForm = () => {
         {/* Back to Home */}
         <div className="text-center mt-6">
           <Link
-            href="/"
-            className="text-sm text-gray-600 hover:text-gray-900 underline"
+            href="/auth/student/login"
+            className="font-semibold text-blue-600 hover:text-blue-700"
           >
             ← Back to Home
           </Link>

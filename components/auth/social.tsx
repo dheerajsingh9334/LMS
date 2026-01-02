@@ -20,14 +20,14 @@ export const Social = ({type}: socialProps) => {
 
   return (
     <div className="flex items-center w-full gap-x-2">
-      <Button
+      {/* <Button
         size="lg"
         className="w-full"
         onClick={() => onClick("google")}
       >
         {/* <FcGoogle className="h-5 w-5" /> */}
-        {type==="signUp"? `Create an Account` : `Log in here` }  
-      </Button>
+        {/* {type==="signUp"? `Create an Account` : `Log in here` }  
+      </Button> */} 
     </div>
   );
 };

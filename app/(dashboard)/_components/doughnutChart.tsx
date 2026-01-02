@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Chart } from "chart.js";
 
 // Define the props interface
@@ -9,14 +9,21 @@ interface DoughnutChartProps {
 }
 
 const DoughnutChart: React.FC<DoughnutChartProps> = ({ labels, data }) => {
-  useEffect(() => {
-    const ctx = (document.getElementById("myChart") as HTMLCanvasElement).getContext("2d");
+  const chartRef = useRef<Chart | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    if (!ctx) {
-      return;
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const ctx = canvasRef.current.getContext("2d");
+    if (!ctx) return;
+
+    // Destroy existing chart if it exists
+    if (chartRef.current) {
+      chartRef.current.destroy();
     }
 
-    const myChart = new Chart(ctx, {
+    chartRef.current = new Chart(ctx, {
       type: "doughnut",
       data: {
         labels: labels,
@@ -24,45 +31,58 @@ const DoughnutChart: React.FC<DoughnutChartProps> = ({ labels, data }) => {
           {
             data: data,
             borderColor: [
-              "rgb(75, 192, 192)",
-              "rgb(255, 205, 86)",
-              "rgb(255, 99, 132)",
+              "rgb(59, 130, 246)",  // Blue
+              "rgb(34, 197, 94)",   // Green
+              "rgb(249, 115, 22)",  // Orange
+              "rgb(168, 85, 247)",  // Purple
+              "rgb(236, 72, 153)",  // Pink
             ],
             backgroundColor: [
-              "rgb(75, 192, 192)",
-              "rgb(255, 205, 86)",
-              "rgb(255, 99, 132)",
+              "rgba(59, 130, 246, 0.8)",
+              "rgba(34, 197, 94, 0.8)",
+              "rgba(249, 115, 22, 0.8)",
+              "rgba(168, 85, 247, 0.8)",
+              "rgba(236, 72, 153, 0.8)",
             ],
             borderWidth: 2,
           },
         ],
       },
       options: {
-        scales: {
-          xAxes: [
-            {
-              display: false,
-            },
-          ],
-          yAxes: [
-            {
-              display: false,
-            },
-          ],
+        responsive: true,
+        maintainAspectRatio: false,
+        aspectRatio: 1,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 10,
+              font: {
+                size: 12,
+              },
+              usePointStyle: true,
+              boxWidth: 15,
+            }
+          }
         },
       },
     });
 
     // Cleanup function to destroy the chart when the component unmounts
     return () => {
-      myChart.destroy();
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
     };
   }, [labels, data]);
 
  
   return (
-    <div className="border border-gray-400 pt-0 rounded-xl my-auto h-[300px]">
-      <canvas id="myChart" width="300px" height="300px"></canvas>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <h3 className="text-sm font-semibold mb-3 text-gray-700">Course Progress</h3>
+      <div className="relative w-full" style={{ height: '320px' }}>
+        <canvas ref={canvasRef} className="w-full h-full"></canvas>
+      </div>
     </div>
   );
 };

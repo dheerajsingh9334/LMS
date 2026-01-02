@@ -7,20 +7,21 @@ import "react-quill/dist/quill.bubble.css";
 
 interface PreviewProps {
   value: string;
-};
+}
 
-export const Preview = ({
-  value,
-}: PreviewProps) => {
+export const Preview = ({ value }: PreviewProps) => {
   const [isMounted, setIsMounted] = useState(false);
-  const ReactQuill = useMemo(() => dynamic(() => import("react-quill"), { ssr: false }), []);
+  const ReactQuill = useMemo(
+    () => dynamic(() => import("react-quill"), { ssr: false }),
+    []
+  );
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   // Return a simple div for empty values to avoid hydration issues
-  if (!value || value.trim() === '') {
+  if (!value || value.trim() === "") {
     return <div className="text-muted-foreground italic">No content</div>;
   }
 
@@ -47,3 +48,5 @@ export const Preview = ({
     </div>
   );
 };
+
+export default Preview;

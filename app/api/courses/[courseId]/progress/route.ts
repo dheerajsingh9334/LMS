@@ -26,16 +26,16 @@ export async function GET(
           include: {
             chapterVideos: true,
             quizzes: {
-              where: { isPublished: true }
+              where: { isPublished: true },
             },
             assignments: true,
             userProgress: {
-              where: { userId }
-            }
+              where: { userId },
+            },
           },
-          orderBy: { position: "asc" }
-        }
-      }
+          orderBy: { position: "asc" },
+        },
+      },
     });
 
     if (!course) {
@@ -44,7 +44,7 @@ export async function GET(
 
     let totalItems = 0;
     let completedItems = 0;
-    
+
     const chapterProgress: any[] = [];
 
     // Calculate progress for each chapter
@@ -52,50 +52,29 @@ export async function GET(
       let chapterTotalItems = 0;
       let chapterCompletedItems = 0;
 
-      // Count chapter videos (use chapterVideos if available, otherwise count chapter itself)
-      const videoCount = chapter.chapterVideos.length > 0 ? chapter.chapterVideos.length : 1;
-      chapterTotalItems += videoCount;
-      
-      // Check if chapter is completed (video watched)
-      const chapterCompleted = chapter.userProgress.length > 0 && chapter.userProgress[0].isCompleted;
-      if (chapterCompleted) {
-        chapterCompletedItems += videoCount;
-      }
+      // NOTE: Videos do not contribute to progress percentage.
+      // We only count quizzes and assignments as progress items now.
 
       // Count quizzes
       chapterTotalItems += chapter.quizzes.length;
-      
+
       // Check completed quizzes
       for (const quiz of chapter.quizzes) {
         const quizAttempt = await db.quizAttempt.findFirst({
           where: {
             userId,
-            quizId: quiz.id
-          }
+            quizId: quiz.id,
+          },
         });
         if (quizAttempt) {
           chapterCompletedItems++;
         }
       }
 
-      // Count assignments
-      chapterTotalItems += chapter.assignments.length;
-      
-      // Check completed assignments
-      for (const assignment of chapter.assignments) {
-        const submission = await db.assignmentSubmission.findFirst({
-          where: {
-            studentId: userId,
-            assignmentId: assignment.id,
-            status: "SUBMITTED"
-          }
-        });
-        if (submission) {
-          chapterCompletedItems++;
-        }
-      }
-
-      const chapterProgressPercent = chapterTotalItems > 0 ? (chapterCompletedItems / chapterTotalItems) * 100 : 0;
+      const chapterProgressPercent =
+        chapterTotalItems > 0
+          ? (chapterCompletedItems / chapterTotalItems) * 100
+          : 0;
 
       chapterProgress.push({
         chapterId: chapter.id,
@@ -103,14 +82,15 @@ export async function GET(
         totalItems: chapterTotalItems,
         completedItems: chapterCompletedItems,
         progressPercent: Math.round(chapterProgressPercent),
-        isCompleted: chapterProgressPercent === 100
+        isCompleted: chapterProgressPercent === 100,
       });
 
       totalItems += chapterTotalItems;
       completedItems += chapterCompletedItems;
     }
 
-    const overallProgressPercent = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+    const overallProgressPercent =
+      totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
     const isCompletelyFinished = overallProgressPercent === 100;
 
     // Check if certificate exists
@@ -118,9 +98,9 @@ export async function GET(
       where: {
         userId_courseId: {
           userId,
-          courseId
-        }
-      }
+          courseId,
+        },
+      },
     });
 
     const progressData = {
@@ -132,7 +112,7 @@ export async function GET(
       isCompleted: isCompletelyFinished,
       chapters: chapterProgress,
       certificateId: certificate?.id || null,
-      hasCertificate: !!certificate
+      hasCertificate: !!certificate,
     };
 
     return NextResponse.json(progressData);

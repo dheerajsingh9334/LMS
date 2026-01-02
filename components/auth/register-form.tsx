@@ -159,7 +159,7 @@ export const RegisterForm = () => {
               )}
             />
 
-            {form.watch("userType") === "STUDENT" && (
+             {form.watch("userType") === "STUDENT" && (
               <FormField
                 control={form.control}
                 name="rollNo"
@@ -175,9 +175,9 @@ export const RegisterForm = () => {
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
-            )}
+                )} 
+              /> 
+             )} 
           </div>
           <FormError message={error} />
           <FormSuccess message={success} />

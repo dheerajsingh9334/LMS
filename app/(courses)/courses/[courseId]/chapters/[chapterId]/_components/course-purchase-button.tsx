@@ -31,12 +31,13 @@ export const CoursePurchaseButton = ({
         // Free enrollment
         const response = await axios.post(`/api/courses/${courseId}/enroll`);
 
-        if (response.status === 200) {
+        if (response.data.success) {
           toast.success("Successfully enrolled in the course!");
-          // Redirect to first chapter after successful enrollment
-          window.location.href = `/courses/${courseId}/chapters`;
+          // Redirect with success parameter to trigger state update
+          window.location.href = `/courses/${courseId}/chapters?success=1`;
         } else {
-          toast.error("Something went wrong");
+          console.error("Enrollment failed:", response.data);
+          toast.error(response.data.message || "Failed to enroll in course");
         }
       } else {
         // Paid course - redirect to Stripe checkout

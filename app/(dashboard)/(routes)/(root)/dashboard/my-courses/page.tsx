@@ -25,7 +25,7 @@ const MyCoursesPage = async () => {
             },
             select: {
               id: true,
-            }
+            },
           },
           // Include teacher/instructor info
           user: {
@@ -34,17 +34,17 @@ const MyCoursesPage = async () => {
               name: true,
               image: true,
               headline: true,
-            }
+            },
           },
           // Include course ratings
           ratings: {
             select: {
               rating: true,
-            }
-          }
-        }
-      }
-    }
+            },
+          },
+        },
+      },
+    },
   });
 
   const courses = purchases.map((purchase) => ({
@@ -56,7 +56,7 @@ const MyCoursesPage = async () => {
     <div className="p-6 space-y-4">
       <div>
         <h1 className="text-2xl font-bold">My Courses</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text- text-slate-600 dark:text-slate-400">
           All courses you&apos;ve enrolled in
         </p>
       </div>

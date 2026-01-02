@@ -28,7 +28,7 @@ interface LiveChatProps {
 export const LiveChat = ({
   courseId,
   liveSessionId,
-  className = ""
+  className = "",
 }: LiveChatProps) => {
   const [messages, setMessages] = useState<LiveChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -45,10 +45,10 @@ export const LiveChat = ({
   // Load messages on component mount
   useEffect(() => {
     loadMessages();
-    
+
     // Set up polling for new messages every 2 seconds
     const interval = setInterval(loadMessages, 2000);
-    
+
     return () => clearInterval(interval);
   }, [courseId, liveSessionId]);
 
@@ -59,10 +59,17 @@ export const LiveChat = ({
 
   const loadMessages = async () => {
     try {
-      const response = await fetch(`/api/courses/${courseId}/live/${liveSessionId}/messages`);
+      const response = await fetch(
+        `/api/courses/${courseId}/live/${liveSessionId}/messages`
+      );
       if (response.ok) {
         const data = await response.json();
-        setMessages(data);
+        // API may return either an array of messages or
+        // an object with a `messages` field plus metadata.
+        const messages = Array.isArray(data) ? data : data.messages;
+        if (messages) {
+          setMessages(messages);
+        }
       }
     } catch (error) {
       console.error("Failed to load messages:", error);
@@ -76,15 +83,18 @@ export const LiveChat = ({
 
     try {
       setIsSending(true);
-      const response = await fetch(`/api/courses/${courseId}/live/${liveSessionId}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: newMessage.trim(),
-        }),
-      });
+      const response = await fetch(
+        `/api/courses/${courseId}/live/${liveSessionId}/messages`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: newMessage.trim(),
+          }),
+        }
+      );
 
       if (response.ok) {
         setNewMessage("");
@@ -128,7 +138,9 @@ export const LiveChat = ({
             <div className="text-center py-8">
               <User className="h-8 w-8 text-gray-400 mx-auto mb-2" />
               <p className="text-sm text-gray-500">No messages yet</p>
-              <p className="text-xs text-gray-400">Be the first to say something!</p>
+              <p className="text-xs text-gray-400">
+                Be the first to say something!
+              </p>
             </div>
           ) : (
             messages.map((message) => (
@@ -157,10 +169,12 @@ export const LiveChat = ({
                       {message.user.name || "Anonymous"}
                     </span>
                     {message.userId === user?.id && (
-                      <span className="text-xs text-blue-600 font-medium">(You)</span>
+                      <span className="text-xs text-blue-600 font-medium">
+                        (You)
+                      </span>
                     )}
                     <span className="text-xs text-gray-500">
-                      {format(new Date(message.createdAt), 'HH:mm')}
+                      {format(new Date(message.createdAt), "HH:mm")}
                     </span>
                   </div>
                   <p className="text-sm text-gray-800 break-words">

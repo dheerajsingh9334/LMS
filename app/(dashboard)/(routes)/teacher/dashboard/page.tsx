@@ -2,20 +2,22 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { IconBadge } from "@/components/icon-badge";
-import { 
-  BookOpen, 
-  Users, 
-  DollarSign, 
-  TrendingUp, 
-  Video, 
+import {
+  BookOpen,
+  Users,
+  DollarSign,
+  TrendingUp,
+  Video,
   Award,
   Calendar,
-  Bell
+  Bell,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import DoughnutChart from "@/app/(dashboard)/_components/doughnutChart";
+import BarChart from "@/app/(dashboard)/_components/barChart";
 
 const TeacherDashboardPage = async () => {
   const user = await currentUser();
@@ -33,13 +35,13 @@ const TeacherDashboardPage = async () => {
       chapters: {
         select: {
           id: true,
-        }
+        },
       },
       purchases: {
         select: {
           id: true,
           paymentStatus: true,
-        }
+        },
       },
       liveSessions: {
         where: {
@@ -48,13 +50,13 @@ const TeacherDashboardPage = async () => {
         select: {
           id: true,
           title: true,
-        }
+        },
       },
       _count: {
         select: {
           purchases: true,
-        }
-      }
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",
@@ -63,15 +65,32 @@ const TeacherDashboardPage = async () => {
 
   // Calculate stats
   const totalCourses = courses.length;
-  const publishedCourses = courses.filter(course => course.isPublished).length;
-  const totalStudents = courses.reduce((total, course) => 
-    total + course.purchases.filter(p => p.paymentStatus === "completed").length, 0
+  const publishedCourses = courses.filter(
+    (course) => course.isPublished
+  ).length;
+  const totalStudents = courses.reduce(
+    (total, course) =>
+      total +
+      course.purchases.filter((p) => p.paymentStatus === "completed").length,
+    0
   );
   const totalRevenue = courses.reduce((total, course) => {
-    const completedPurchases = course.purchases.filter(p => p.paymentStatus === "completed").length;
-    return total + (completedPurchases * (course.price || 0));
+    const completedPurchases = course.purchases.filter(
+      (p) => p.paymentStatus === "completed"
+    ).length;
+    return total + completedPurchases * (course.price || 0);
   }, 0);
-  const activeLiveSessions = courses.reduce((total, course) => total + course.liveSessions.length, 0);
+  const activeLiveSessions = courses.reduce(
+    (total, course) => total + course.liveSessions.length,
+    0
+  );
+
+  const publishedCount = courses.filter((c) => c.isPublished).length;
+  const draftCount = totalCourses - publishedCount;
+  const topCoursesByStudents = courses.slice(0, 6).map((c) => ({
+    title: c.title,
+    students: c.purchases.filter((p) => p.paymentStatus === "completed").length,
+  }));
 
   return (
     <div className="p-6 space-y-6">
@@ -79,7 +98,9 @@ const TeacherDashboardPage = async () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Teacher Dashboard</h1>
-          <p className="text-slate-600">Welcome back, {user.name}! Manage your courses and students.</p>
+          <p className="text-slate-600">
+            Welcome back, {user.name}! Manage your courses and students.
+          </p>
         </div>
         <div className="flex gap-2">
           <Button asChild>
@@ -116,14 +137,14 @@ const TeacherDashboardPage = async () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Students
+            </CardTitle>
             <IconBadge icon={Users} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalStudents}</div>
-            <p className="text-xs text-muted-foreground">
-              Across all courses
-            </p>
+            <p className="text-xs text-muted-foreground">Across all courses</p>
           </CardContent>
         </Card>
 
@@ -133,10 +154,10 @@ const TeacherDashboardPage = async () => {
             <IconBadge icon={DollarSign} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{totalRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              From course sales
-            </p>
+            <div className="text-2xl font-bold">
+              ₹{totalRevenue.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">From course sales</p>
           </CardContent>
         </Card>
 
@@ -147,11 +168,25 @@ const TeacherDashboardPage = async () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeLiveSessions}</div>
-            <p className="text-xs text-muted-foreground">
-              Currently active
-            </p>
+            <p className="text-xs text-muted-foreground">Currently active</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: Course Publication Status */}
+        <DoughnutChart
+          labels={["Published", "Draft"]}
+          data={[publishedCount, Math.max(draftCount, 0)]}
+        />
+
+        {/* Right: Students per Course */}
+        <BarChart
+          title="Students per Course"
+          labels={topCoursesByStudents.map((c) => c.title)}
+          data={topCoursesByStudents.map((c) => c.students)}
+        />
       </div>
 
       {/* Quick Actions */}
@@ -170,11 +205,11 @@ const TeacherDashboardPage = async () => {
                 Manage Courses
               </Link>
             </Button>
-            
+
             <Button asChild variant="outline" className="h-24 flex-col">
               <Link href="/teacher/analytics">
                 <TrendingUp className="w-8 h-8 mb-2" />
-                View Analytics  
+                View Analytics
               </Link>
             </Button>
 
@@ -196,17 +231,19 @@ const TeacherDashboardPage = async () => {
             Recent Courses
           </CardTitle>
           <Button asChild variant="ghost" size="sm">
-            <Link href="/teacher/courses">
-              View All
-            </Link>
+            <Link href="/teacher/courses">View All</Link>
           </Button>
         </CardHeader>
         <CardContent>
           {courses.length === 0 ? (
             <div className="text-center py-8">
               <BookOpen className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-600 mb-2">No courses yet</h3>
-              <p className="text-slate-500 mb-4">Create your first course to start teaching!</p>
+              <h3 className="text-lg font-medium text-slate-600 mb-2">
+                No courses yet
+              </h3>
+              <p className="text-slate-500 mb-4">
+                Create your first course to start teaching!
+              </p>
               <Button asChild>
                 <Link href="/teacher/courses/create">
                   Create Your First Course
@@ -216,7 +253,10 @@ const TeacherDashboardPage = async () => {
           ) : (
             <div className="space-y-4">
               {courses.slice(0, 5).map((course) => (
-                <div key={course.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div
+                  key={course.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
                       <BookOpen className="w-6 h-6 text-slate-600" />
@@ -241,9 +281,7 @@ const TeacherDashboardPage = async () => {
                       <Badge variant="destructive">Live</Badge>
                     )}
                     <Button asChild size="sm" variant="outline">
-                      <Link href={`/teacher/courses/${course.id}`}>
-                        Manage
-                      </Link>
+                      <Link href={`/teacher/courses/${course.id}`}>Manage</Link>
                     </Button>
                   </div>
                 </div>

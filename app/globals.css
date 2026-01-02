@@ -1,24 +1,69 @@
-.section{
-  @apply  p-[30px] lg:px-[90px] sm:py-[60px] md:py-[140px] md:px-[60px] 
-}
-.landing-section{
-  @apply  px-[30px] lg:px-[60px]   md:px-[45px] 
-}
-.calendar-dates {
-  background-color: #9C88FB;
-  color: white; /* Optional: Adjust text color for better visibility */
-  border-radius: 4px; /* Optional: Rounded corners */
-  margin: 2px;
-  
-}
-.calendar-dates:hover {
-  background-color: #9C88FB !important; /* Ensure it stays the same as normal state */
-  color: white !important;
-  margin: 2px;
-}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.section {
+  @apply p-[30px] lg:px-[90px] sm:py-[60px] md:py-[140px] md:px-[60px];
+}
+.landing-section {
+  @apply px-[30px] lg:px-[60px]   md:px-[45px];
+}
+.calendar-dates {
+  background-color: #9c88fb;
+  color: white; /* Optional: Adjust text color for better visibility */
+  border-radius: 4px; /* Optional: Rounded corners */
+  margin: 2px;
+}
+.calendar-dates:hover {
+  background-color: #9c88fb !important; /* Ensure it stays the same as normal state */
+  color: white !important;
+  margin: 2px;
+}
+
+/* Calendar Grid Layout - Force horizontal display */
+.rdp-month {
+  width: 100%;
+}
+
+.rdp-table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 2px !important;
+}
+
+.rdp-head_row {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  width: 100%;
+  gap: 2px;
+}
+
+.rdp-head_cell {
+  text-align: center !important;
+}
+
+.rdp-tbody {
+  width: 100%;
+}
+
+.rdp-row {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  width: 100%;
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.rdp-cell {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.rdp-day {
+  width: 36px !important;
+  height: 36px !important;
+}
 
 /* Hydration-safe prose styles */
 .prose p div {
@@ -79,29 +124,29 @@ body,
 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
- 
+
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
- 
+
     --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
- 
+
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
- 
+
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
- 
+
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
- 
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
- 
+
     --radius: 0.5rem;
 
     --chart-1: 12 76% 61%;
@@ -110,32 +155,32 @@ body,
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
   }
- 
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
- 
+
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
- 
+
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
- 
+
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
- 
+
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
- 
+
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
- 
+
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
- 
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
- 
+
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
@@ -145,10 +190,9 @@ body,
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    
   }
 }
- 
+
 @layer base {
   * {
     @apply border-border;

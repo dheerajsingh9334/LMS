@@ -97,6 +97,7 @@ model Course {
   price       Float?  // Course price in rupiya
   isPublished Boolean @default(false)
   isFree      Boolean @default(false)
+  adminComment String? // Admin feedback or report when course is unpublished
   learningOutcomes String[] @default([]) // What students will learn
   tags        String[] @default([]) // Course tags for search and categorization
   
@@ -156,6 +157,31 @@ model Announcement {
 
   @@index([courseId])
 }
+
+// Platform-wide announcements shown as a banner on dashboards
+model GlobalAnnouncement {
+  id        String   @id @default(cuid()) @map("_id")
+  title     String
+  content   String
+  createdBy String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// Direct messages between admin and specific users
+model UserMessage {
+  id          String   @id @default(cuid()) @map("_id")
+  senderId    String
+  recipientId String
+  title       String
+  body        String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([recipientId, isRead])
+  @@index([senderId])
+}
+
 model Notification {
   id            String   @id @default(cuid()) @map("_id")
   userId        String
@@ -503,6 +529,13 @@ model CertificateTemplate {
   // Template details
   templateUrl     String   // URL to template image/PDF
   templateType    String   @default("image") // "image" or "pdf"
+  
+  // Editable text fields (like Coursera)
+  certificateTitle  String?  @default("Certificate of Completion")
+  signatureName     String?  // Name for signature (defaults to teacher name)
+  signatureTitle    String?  @default("Course Instructor")
+  organizationName  String?  // Organization name
+  additionalText    String?  // Any additional custom text
   
   // Positioning for dynamic text (coordinates for auto-generation)
   namePositionX   Int?     // X coordinate for name

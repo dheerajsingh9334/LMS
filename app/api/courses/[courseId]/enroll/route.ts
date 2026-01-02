@@ -37,16 +37,33 @@ export async function POST(
       return new NextResponse("Already purchased", { status: 400 });
     }
 
-    await db.purchase.create({
-      data: {
+    try {
+      const purchase = await db.purchase.create({
+        data: {
+          userId: user.id,
+          courseId: params.courseId,
+          amount: 0,
+          paymentStatus: "completed",
+          // Give free/enroll purchases a unique synthetic session id
+          stripeSessionId: `enroll_${user.id}_${params.courseId}_${Date.now()}`,
+        },
+      });
+
+      console.log("[COURSE_ENROLL] Successfully created enrollment:", {
         userId: user.id,
         courseId: params.courseId,
-        amount: 0,
-        paymentStatus: "completed",
-      },
-    });
+        purchaseId: purchase.id,
+      });
 
-    return NextResponse.json({ message: "Course enrolled successfully" });
+      return NextResponse.json({
+        success: true,
+        message: "Course enrolled successfully",
+        purchaseId: purchase.id,
+      });
+    } catch (error) {
+      console.error("[COURSE_ENROLL] Failed to create enrollment:", error);
+      return new NextResponse("Failed to create enrollment", { status: 500 });
+    }
   } catch (error) {
     console.log("[COURSE_ID_ENROLL]", error);
     return new NextResponse("Internal Error", { status: 500 });

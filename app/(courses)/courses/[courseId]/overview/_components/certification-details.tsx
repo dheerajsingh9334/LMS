@@ -1,16 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { Award, CheckCircle, Download, Share2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 interface CertificationDetailsProps {
   courseTitle: string;
   hasCertificate: boolean;
+  courseId: string;
 }
 
 export const CertificationDetails = ({
   courseTitle,
   hasCertificate,
+  courseId,
 }: CertificationDetailsProps) => {
   if (!hasCertificate) {
     return null;
@@ -77,16 +80,22 @@ export const CertificationDetails = ({
           </ol>
 
           <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
-            <div className="flex items-center gap-2 mb-2">
-              <Download className="w-4 h-4 text-amber-600" />
-              <span className="font-semibold text-sm text-amber-900">
-                Certificate Preview
-              </span>
-            </div>
-            <p className="text-xs text-slate-600">
-              Your certificate will include your name, course title, completion
-              date, and instructor signature.
-            </p>
+            <Link
+              href={`/courses/${courseId}/certificate`}
+              className="block hover:bg-amber-100 rounded-md px-2 py-1 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Download className="w-4 h-4 text-amber-600" />
+                <span className="font-semibold text-sm text-amber-900">
+                  Certificate Preview
+                </span>
+              </div>
+              <p className="text-xs text-slate-600">
+                Click to view a live preview of your certificate with your
+                details, course title, completion date, and instructor
+                signature.
+              </p>
+            </Link>
           </div>
         </Card>
       </div>

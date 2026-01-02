@@ -1,12 +1,9 @@
 import { Navbar } from "./_components/navbar";
 import { Sidebar } from "./_components/sidebar";
+import { GlobalAnnouncementBanner } from "./_components/global-announcement-banner";
 
-const DashboardLayout = ({
-  children
-}: {
-  children: React.ReactNode;
-}) => {
-  return ( 
+const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
     <div className="h-full dashboard-container">
       <div className="h-[80px] md:pl-64 fixed inset-y-0 w-full z-50">
         <Navbar />
@@ -15,10 +12,11 @@ const DashboardLayout = ({
         <Sidebar />
       </div>
       <main className="md:pl-64 pt-[80px] h-full">
+        <GlobalAnnouncementBanner />
         {children}
       </main>
     </div>
-   );
-}
- 
+  );
+};
+
 export default DashboardLayout;

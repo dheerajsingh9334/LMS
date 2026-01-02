@@ -198,12 +198,22 @@ export const CourseCard = ({
 
       <div className="flex flex-col pt-2">
         <Link href={`/courses/${id}`}>
-          <div className="text-lg md:text-base font-medium group-hover:text-custom-primary transition line-clamp-2">
-            {title}
+          <div className="flex items-center gap-2">
+            <div className="text-lg md:text-base font-medium group-hover:text-custom-primary transition line-clamp-2">
+              {title}
+            </div>
+            {progress === 100 && (
+              <Badge
+                variant="secondary"
+                className="text-[10px] px-2 py-0.5 border-transparent bg-emerald-500 text-white hover:bg-emerald-600"
+              >
+                Completed
+              </Badge>
+            )}
           </div>
           <p className="text-xs text-muted-foreground">{category}</p>
         </Link>
-        
+
         {/* Teacher Info */}
         {teacherName && teacherId && (
           <Link href={`/teacher/${teacherId}`} className="group/teacher">
@@ -249,9 +259,7 @@ export const CourseCard = ({
               ))}
             </div>
             {totalRatings !== undefined && totalRatings > 0 && (
-              <span className="text-xs text-gray-500">
-                ({totalRatings})
-              </span>
+              <span className="text-xs text-gray-500">({totalRatings})</span>
             )}
           </div>
         )}
@@ -281,9 +289,9 @@ export const CourseCard = ({
           />
         ) : (
           <Link href={`/courses/${id}/overview`}>
-          <div>
-            <Badge variant="new">View Course Details</Badge>
-          </div>
+            <div>
+              <Badge variant="new">View Course Details</Badge>
+            </div>
           </Link>
         )}
       </div>

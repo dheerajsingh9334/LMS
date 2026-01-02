@@ -55,7 +55,7 @@ export const QuizAttemptForm = ({
 
       // Calculate score
       let score = 0;
-      quiz.questions.forEach(question => {
+      quiz.questions.forEach((question) => {
         if (answers[question.id] === question.answer) {
           score++;
         }
@@ -70,14 +70,26 @@ export const QuizAttemptForm = ({
       );
 
       toast.success("Quiz submitted successfully!");
-      router.refresh();
+      // After submission, ensure we return to the quiz page
+      // without any retake query param so results are shown.
+      router.replace(
+        `/courses/${courseId}/chapters/${chapterId}/quiz/${quiz.id}`
+      );
     } catch (error: any) {
       console.error("Quiz submission error:", error);
       toast.error(error.response?.data?.message || "Failed to submit quiz");
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, answers, quiz.questions, quiz.id, courseId, chapterId, router]);
+  }, [
+    isSubmitting,
+    answers,
+    quiz.questions,
+    quiz.id,
+    courseId,
+    chapterId,
+    router,
+  ]);
 
   // Timer effect
   useEffect(() => {
@@ -108,9 +120,9 @@ export const QuizAttemptForm = ({
   };
 
   const handleAnswerChange = (questionId: string, answer: string) => {
-    setAnswers(prev => ({
+    setAnswers((prev) => ({
       ...prev,
-      [questionId]: answer
+      [questionId]: answer,
     }));
   };
 
@@ -144,16 +156,20 @@ export const QuizAttemptForm = ({
         <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="h-5 w-5 text-blue-600" />
-            <span className="font-semibold text-blue-800">Quiz Instructions</span>
+            <span className="font-semibold text-blue-800">
+              Quiz Instructions
+            </span>
           </div>
           <ul className="space-y-2 text-blue-700 mb-6">
             <li>• You have {quiz.timeline} minutes to complete this quiz</li>
             <li>• There are {quiz.questions.length} questions in total</li>
-            <li>• You can navigate between questions using the navigation buttons</li>
+            <li>
+              • You can navigate between questions using the navigation buttons
+            </li>
             <li>• Make sure to answer all questions before submitting</li>
             <li>• The quiz will auto-submit when time runs out</li>
           </ul>
-          
+
           <div className="flex justify-center">
             <Button onClick={startQuiz} size="lg" className="px-8">
               Start Quiz
@@ -172,23 +188,33 @@ export const QuizAttemptForm = ({
       <div className="flex items-center justify-between p-4 bg-white border rounded-lg">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <Clock className={`h-5 w-5 ${timeLeft < 300 ? "text-red-600" : "text-blue-600"}`} />
-            <span className={`font-mono text-lg ${timeLeft < 300 ? "text-red-600" : "text-blue-600"}`}>
+            <Clock
+              className={`h-5 w-5 ${
+                timeLeft < 300 ? "text-red-600" : "text-blue-600"
+              }`}
+            />
+            <span
+              className={`font-mono text-lg ${
+                timeLeft < 300 ? "text-red-600" : "text-blue-600"
+              }`}
+            >
               {formatTime(timeLeft)}
             </span>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">
               Progress: {getAnsweredCount()}/{quiz.questions.length}
             </span>
           </div>
         </div>
-        
+
         <Button
           onClick={handleSubmit}
           disabled={isSubmitting}
-          variant={getAnsweredCount() === quiz.questions.length ? "default" : "outline"}
+          variant={
+            getAnsweredCount() === quiz.questions.length ? "default" : "outline"
+          }
         >
           {isSubmitting ? "Submitting..." : "Submit Quiz"}
         </Button>
@@ -227,7 +253,9 @@ export const QuizAttemptForm = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Question {currentQuestion + 1} of {quiz.questions.length}</span>
+            <span>
+              Question {currentQuestion + 1} of {quiz.questions.length}
+            </span>
             {answers[currentQuestionData.id] && (
               <CheckCircle className="h-5 w-5 text-green-600" />
             )}
@@ -235,12 +263,16 @@ export const QuizAttemptForm = ({
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h3 className="text-lg font-medium mb-4">{currentQuestionData.text}</h3>
-            
+            <h3 className="text-lg font-medium mb-4">
+              {currentQuestionData.text}
+            </h3>
+
             {currentQuestionData.type === "MCQ" ? (
               <RadioGroup
                 value={answers[currentQuestionData.id] || ""}
-                onValueChange={(value) => handleAnswerChange(currentQuestionData.id, value)}
+                onValueChange={(value) =>
+                  handleAnswerChange(currentQuestionData.id, value)
+                }
               >
                 {[
                   currentQuestionData.option1,
@@ -250,9 +282,15 @@ export const QuizAttemptForm = ({
                 ]
                   .filter(Boolean)
                   .map((option, index) => (
-                    <div key={index} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
+                    <div
+                      key={index}
+                      className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50"
+                    >
                       <RadioGroupItem value={option!} id={`option-${index}`} />
-                      <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
+                      <Label
+                        htmlFor={`option-${index}`}
+                        className="flex-1 cursor-pointer"
+                      >
                         {option}
                       </Label>
                     </div>
@@ -261,7 +299,9 @@ export const QuizAttemptForm = ({
             ) : (
               <Input
                 value={answers[currentQuestionData.id] || ""}
-                onChange={(e) => handleAnswerChange(currentQuestionData.id, e.target.value)}
+                onChange={(e) =>
+                  handleAnswerChange(currentQuestionData.id, e.target.value)
+                }
                 placeholder="Enter your answer..."
                 className="w-full"
               />
@@ -277,7 +317,7 @@ export const QuizAttemptForm = ({
             >
               Previous
             </Button>
-            
+
             <Button
               onClick={nextQuestion}
               disabled={currentQuestion === quiz.questions.length - 1}

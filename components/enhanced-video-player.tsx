@@ -47,9 +47,15 @@ export const EnhancedVideoPlayer = ({
   const [playbackRate, setPlaybackRate] = useState(1);
   const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const [quality, setQuality] = useState('auto');
-  const [availableQualities, setAvailableQualities] = useState<string[]>(['auto', '1080p', '720p', '480p', '360p']);
-  
+  const [quality, setQuality] = useState("auto");
+  const [availableQualities, setAvailableQualities] = useState<string[]>([
+    "auto",
+    "1080p",
+    "720p",
+    "480p",
+    "360p",
+  ]);
+
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
@@ -59,14 +65,14 @@ export const EnhancedVideoPlayer = ({
     const handleLoadedMetadata = () => {
       setDuration(video.duration);
       setIsLoading(false);
-      
+
       // Detect available qualities based on video dimensions
       if (video.videoHeight) {
-        const detectedQualities = ['auto'];
-        if (video.videoHeight >= 1080) detectedQualities.push('1080p');
-        if (video.videoHeight >= 720) detectedQualities.push('720p');
-        if (video.videoHeight >= 480) detectedQualities.push('480p');
-        detectedQualities.push('360p');
+        const detectedQualities = ["auto"];
+        if (video.videoHeight >= 1080) detectedQualities.push("1080p");
+        if (video.videoHeight >= 720) detectedQualities.push("720p");
+        if (video.videoHeight >= 480) detectedQualities.push("480p");
+        detectedQualities.push("360p");
         setAvailableQualities(detectedQualities);
       }
     };
@@ -189,40 +195,61 @@ export const EnhancedVideoPlayer = ({
 
     const currentTime = video.currentTime;
     const wasPlaying = !video.paused;
-    
+
     setQuality(newQuality);
     setIsLoading(true);
 
     // Show quality change notification
-    toast.info(`Video quality changed to ${newQuality === 'auto' ? 'Auto' : newQuality}`);
+    toast.info(
+      `Video quality changed to ${newQuality === "auto" ? "Auto" : newQuality}`
+    );
 
-    // For demonstration, we'll simulate quality changes
-    // In a real implementation, you'd have different video sources
+    // For demonstration, we'll simulate quality changes by following
+    // a naming convention like `video_720p.mp4`. In production you
+    // should ensure these variant files actually exist.
     const qualityUrls: { [key: string]: string } = {
-      'auto': url,
-      '1080p': url.replace(/\.(mp4|webm|ogg)$/i, '_1080p$1') || url,
-      '720p': url.replace(/\.(mp4|webm|ogg)$/i, '_720p$1') || url,
-      '480p': url.replace(/\.(mp4|webm|ogg)$/i, '_480p$1') || url,
-      '360p': url.replace(/\.(mp4|webm|ogg)$/i, '_360p$1') || url,
+      auto: url,
+      "1080p": url.replace(/\.(mp4|webm|ogg)$/i, "_1080p.$1"),
+      "720p": url.replace(/\.(mp4|webm|ogg)$/i, "_720p.$1"),
+      "480p": url.replace(/\.(mp4|webm|ogg)$/i, "_480p.$1"),
+      "360p": url.replace(/\.(mp4|webm|ogg)$/i, "_360p.$1"),
     };
 
     // Check if the quality-specific URL exists, fallback to original
     const newUrl = qualityUrls[newQuality] || url;
-    
+
     if (newUrl !== video.src) {
       video.src = newUrl;
       video.currentTime = currentTime;
-      
+
       const handleLoadedData = () => {
         video.currentTime = currentTime;
         if (wasPlaying) {
           video.play();
         }
         setIsLoading(false);
-        video.removeEventListener('loadeddata', handleLoadedData);
+        video.removeEventListener("loadeddata", handleLoadedData);
+        video.removeEventListener("error", handleError);
       };
-      
-      video.addEventListener('loadeddata', handleLoadedData);
+
+      const handleError = () => {
+        // If the quality-specific source fails to load, revert to Auto
+        console.error("Failed to load selected quality, reverting to auto");
+        toast.error("Unable to load selected quality, reverting to Auto");
+        video.removeEventListener("loadeddata", handleLoadedData);
+        video.removeEventListener("error", handleError);
+
+        setQuality("auto");
+        video.src = url;
+        video.currentTime = currentTime;
+        if (wasPlaying) {
+          video.play();
+        }
+        setIsLoading(false);
+      };
+
+      video.addEventListener("loadeddata", handleLoadedData);
+      video.addEventListener("error", handleError);
       video.load();
     } else {
       setIsLoading(false);
@@ -281,7 +308,7 @@ export const EnhancedVideoPlayer = ({
             <h3 className="text-white font-semibold text-lg">{title}</h3>
             {/* Quality Indicator */}
             <div className="bg-black/60 px-2 py-1 rounded text-white text-sm">
-              {quality === 'auto' ? 'Auto' : quality}
+              {quality === "auto" ? "Auto" : quality}
               {videoRef.current?.videoHeight && (
                 <span className="ml-1 text-white/70">
                   ({videoRef.current.videoWidth}x{videoRef.current.videoHeight})
@@ -387,7 +414,10 @@ export const EnhancedVideoPlayer = ({
                   {quality}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-black/90 border-white/20">
+              <DropdownMenuContent
+                align="end"
+                className="bg-black/90 border-white/20"
+              >
                 <div className="text-white/60 text-xs font-semibold px-2 py-1">
                   Quality
                 </div>
@@ -399,7 +429,7 @@ export const EnhancedVideoPlayer = ({
                       quality === q ? "bg-white/20" : ""
                     }`}
                   >
-                    {q === 'auto' ? 'Auto' : q}
+                    {q === "auto" ? "Auto" : q}
                     {q === quality && (
                       <span className="ml-2 text-blue-400">✓</span>
                     )}
@@ -419,7 +449,10 @@ export const EnhancedVideoPlayer = ({
                   <Settings className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-black/90 border-white/20">
+              <DropdownMenuContent
+                align="end"
+                className="bg-black/90 border-white/20"
+              >
                 <div className="text-white/60 text-xs font-semibold px-2 py-1">
                   Playback Speed
                 </div>
@@ -456,3 +489,5 @@ export const EnhancedVideoPlayer = ({
     </div>
   );
 };
+
+export default EnhancedVideoPlayer;

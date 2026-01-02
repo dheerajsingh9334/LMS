@@ -1,5 +1,5 @@
 // components/ChapterQuizForm.tsx
-"use client"
+"use client";
 import * as z from "zod";
 import axios from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +26,8 @@ interface QuizzesFormProps {
   initialData: Chapter & { quizzes: Quiz[] };
   courseId: string;
   chapterId: string;
+  onQuizCreated?: (quizId: string) => void;
+  onQuizSelected?: (quizId: string) => void;
 }
 
 const formSchema = z.object({
@@ -39,6 +41,8 @@ export const ChapterQuizForm = ({
   initialData,
   courseId,
   chapterId,
+  onQuizCreated,
+  onQuizSelected,
 }: QuizzesFormProps) => {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -60,16 +64,28 @@ export const ChapterQuizForm = ({
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const response = await axios.post(`/api/courses/${courseId}/chapters/${chapterId}/quizzes`, {
-        title: values.title,
-        timeline: values.timeline,
-      });
+      const response = await axios.post(
+        `/api/courses/${courseId}/chapters/${chapterId}/quizzes`,
+        {
+          title: values.title,
+          timeline: values.timeline,
+        }
+      );
 
       const newQuiz = response.data;
-      toast.success("Quiz created");
+      toast.success("Quiz created. Now add questions.");
       toggleCreating();
 
-      router.refresh(); // Refresh the page or relevant data after creation
+      // Notify parent (if provided) about the newly created quiz
+      if (onQuizCreated) {
+        onQuizCreated(newQuiz.id);
+      }
+
+      // Go straight to the quiz editor where all
+      // questions can be managed on a single screen
+      router.push(
+        `/teacher/courses/${courseId}/chapters/${chapterId}/quizzes/${newQuiz.id}`
+      );
     } catch (error) {
       console.error("Quiz creation error:", error);
       toast.error("Something went wrong");
@@ -79,9 +95,12 @@ export const ChapterQuizForm = ({
   const onReorder = async (updateData: { id: string; position: number }[]) => {
     try {
       setIsUpdating(true);
-      await axios.put(`/api/courses/${courseId}/chapters/${chapterId}/quizzes/reorder`, {
-        list: updateData,
-      });
+      await axios.put(
+        `/api/courses/${courseId}/chapters/${chapterId}/quizzes/reorder`,
+        {
+          list: updateData,
+        }
+      );
       toast.success("Quizzes reordered");
       router.refresh();
     } catch (error) {
@@ -93,7 +112,12 @@ export const ChapterQuizForm = ({
   };
 
   const onEdit = (id: string) => {
-    router.push(`/teacher/courses/${courseId}/chapters/${chapterId}/quizzes/${id}`);
+    if (onQuizSelected) {
+      onQuizSelected(id);
+    }
+    router.push(
+      `/teacher/courses/${courseId}/chapters/${chapterId}/quizzes/${id}`
+    );
   };
 
   return (
@@ -118,14 +142,21 @@ export const ChapterQuizForm = ({
       </div>
       {isCreating && (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 mt-4"
+          >
             <FormField
               control={form.control}
               name="title"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input disabled={isSubmitting} placeholder="e.g. 'Quiz 1'" {...field} />
+                    <Input
+                      disabled={isSubmitting}
+                      placeholder="e.g. 'Quiz 1'"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

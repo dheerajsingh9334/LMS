@@ -4,7 +4,6 @@ import NextAuth, { type DefaultSession } from "next-auth";
 export type ExtendedUser = DefaultSession["user"] & {
   role: UserRole;
   userType: UserType;
-  isTwoFactorEnabled: boolean;
   isOAuth: boolean;
   // Student fields
   dateOfBirth?: Date;

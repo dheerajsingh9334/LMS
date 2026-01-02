@@ -3,12 +3,14 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 
 const ChaptersPage = async ({
-  params
+  params,
+  searchParams,
 }: {
   params: { courseId: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }) => {
   const user = await currentUser();
-  
+
   if (!user?.id) {
     return redirect("/");
   }
@@ -20,11 +22,11 @@ const ChaptersPage = async ({
       isPublished: true,
     },
     orderBy: {
-      position: "asc"
+      position: "asc",
     },
     select: {
       id: true,
-    }
+    },
   });
 
   if (!firstChapter) {
@@ -32,8 +34,17 @@ const ChaptersPage = async ({
     return redirect(`/courses/${params.courseId}/overview`);
   }
 
-  // Redirect to the first chapter
-  return redirect(`/courses/${params.courseId}/chapters/${firstChapter.id}`);
+  // Preserve the Stripe success query param so that
+  // CheckoutSuccessHandler can finalize the purchase.
+  const successParam = searchParams?.success;
+  const redirectUrl = successParam
+    ? `/courses/${params.courseId}/chapters/${firstChapter.id}?success=${
+        Array.isArray(successParam) ? successParam[0] : successParam
+      }`
+    : `/courses/${params.courseId}/chapters/${firstChapter.id}`;
+
+  // Redirect to the first chapter (with optional success flag)
+  return redirect(redirectUrl);
 };
 
 export default ChaptersPage;

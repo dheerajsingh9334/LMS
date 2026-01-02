@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  Video, 
-  VideoOff, 
-  Mic, 
-  MicOff, 
-  X, 
+import {
+  Video,
+  VideoOff,
+  Mic,
+  MicOff,
+  X,
   MessageSquare,
   BarChart3,
   Users,
@@ -15,7 +15,7 @@ import {
   Settings,
   Monitor,
   Volume2,
-  VolumeX
+  VolumeX,
 } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -43,7 +43,7 @@ export const TeacherLiveStream = ({
   channelName,
   onEnd,
   teacherName = "Teacher",
-  teacherImage
+  teacherImage,
 }: TeacherLiveStreamProps) => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(true);
@@ -55,7 +55,7 @@ export const TeacherLiveStream = ({
   const [streamStats, setStreamStats] = useState({
     duration: 0,
     bitrate: 0,
-    quality: "HD"
+    quality: "HD",
   });
 
   const clientRef = useRef<IAgoraRTCClient | null>(null);
@@ -72,11 +72,35 @@ export const TeacherLiveStream = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Periodically sync viewer count from the server so the
+  // "viewers" badge reflects how many students have actually
+  // joined via the /live/join endpoint.
+  useEffect(() => {
+    const fetchViewerCount = async () => {
+      try {
+        const res = await fetch(
+          `/api/courses/${courseId}/live/${liveSessionId}/messages`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!Array.isArray(data) && typeof data?.viewerCount === "number") {
+          setViewerCount(data.viewerCount);
+        }
+      } catch (error) {
+        console.error("Failed to sync viewer count", error);
+      }
+    };
+
+    fetchViewerCount();
+    const interval = setInterval(fetchViewerCount, 5000);
+    return () => clearInterval(interval);
+  }, [courseId, liveSessionId]);
+
   const startStreaming = async () => {
     try {
       // Dynamically import Agora SDK only on client side
       const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
-      
+
       // Get Agora token
       const response = await axios.post(
         `/api/courses/${courseId}/live/${liveSessionId}/token`,
@@ -99,8 +123,9 @@ export const TeacherLiveStream = ({
       await client.join(appId, channelName, token, null);
 
       // Create and publish local tracks
-      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-      
+      const [audioTrack, videoTrack] =
+        await AgoraRTC.createMicrophoneAndCameraTracks();
+
       videoTrackRef.current = videoTrack;
       audioTrackRef.current = audioTrack;
 
@@ -165,16 +190,18 @@ export const TeacherLiveStream = ({
   const toggleScreenShare = async () => {
     // Screen sharing logic would go here
     setIsScreenSharing(!isScreenSharing);
-    toast.success(isScreenSharing ? "Screen sharing stopped" : "Screen sharing started");
+    toast.success(
+      isScreenSharing ? "Screen sharing stopped" : "Screen sharing started"
+    );
   };
 
   // Stream statistics timer
   useEffect(() => {
     if (isStreaming) {
       const interval = setInterval(() => {
-        setStreamStats(prev => ({
+        setStreamStats((prev) => ({
           ...prev,
-          duration: prev.duration + 1
+          duration: prev.duration + 1,
         }));
       }, 1000);
       return () => clearInterval(interval);
@@ -185,7 +212,9 @@ export const TeacherLiveStream = ({
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
@@ -199,9 +228,11 @@ export const TeacherLiveStream = ({
                 <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
                 <div className="absolute inset-0 w-3 h-3 bg-white rounded-full animate-ping" />
               </div>
-              <span className="text-white font-bold text-sm tracking-wide">LIVE</span>
+              <span className="text-white font-bold text-sm tracking-wide">
+                LIVE
+              </span>
             </div>
-            
+
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
               <Users className="w-4 h-4 text-white" />
               <span className="text-white font-semibold text-sm">
@@ -228,7 +259,9 @@ export const TeacherLiveStream = ({
               onClick={() => setShowChat(!showChat)}
               variant="ghost"
               size="sm"
-              className={`text-white hover:bg-white/20 ${showChat ? 'bg-white/20' : ''}`}
+              className={`text-white hover:bg-white/20 ${
+                showChat ? "bg-white/20" : ""
+              }`}
             >
               <MessageSquare className="h-4 w-4 mr-2" />
               Chat
@@ -238,7 +271,9 @@ export const TeacherLiveStream = ({
               onClick={() => setShowPolls(!showPolls)}
               variant="ghost"
               size="sm"
-              className={`text-white hover:bg-white/20 ${showPolls ? 'bg-white/20' : ''}`}
+              className={`text-white hover:bg-white/20 ${
+                showPolls ? "bg-white/20" : ""
+              }`}
             >
               <BarChart3 className="h-4 w-4 mr-2" />
               Polls
@@ -263,7 +298,8 @@ export const TeacherLiveStream = ({
           ref={videoContainerRef}
           className="w-full h-full flex items-center justify-center relative"
           style={{
-            background: 'radial-gradient(circle at center, #1a1a2e 0%, #0f0f1e 100%)'
+            background:
+              "radial-gradient(circle at center, #1a1a2e 0%, #0f0f1e 100%)",
           }}
         >
           {!isCameraOn && (
@@ -272,10 +308,12 @@ export const TeacherLiveStream = ({
                 <VideoOff className="w-24 h-24 text-gray-400" />
               </div>
               <p className="text-gray-400 text-lg font-medium">Camera is off</p>
-              <p className="text-gray-500 text-sm mt-2">Students can still hear you</p>
+              <p className="text-gray-500 text-sm mt-2">
+                Students can still hear you
+              </p>
             </div>
           )}
-          
+
           {/* Recording indicator */}
           {isStreaming && (
             <div className="absolute top-6 left-6 flex items-center gap-2 bg-red-600/90 backdrop-blur-sm px-4 py-2 rounded-full">
@@ -286,7 +324,9 @@ export const TeacherLiveStream = ({
 
           {/* Stream quality indicator */}
           <div className="absolute top-6 right-6 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
-            <span className="text-white text-xs font-medium">{streamStats.quality}</span>
+            <span className="text-white text-xs font-medium">
+              {streamStats.quality}
+            </span>
           </div>
 
           {/* Audio level indicator */}
@@ -298,7 +338,7 @@ export const TeacherLiveStream = ({
                   <div
                     key={i}
                     className={`w-1 h-4 rounded-full ${
-                      i < 3 ? 'bg-green-400' : 'bg-gray-600'
+                      i < 3 ? "bg-green-400" : "bg-gray-600"
                     }`}
                   />
                 ))}
@@ -312,7 +352,7 @@ export const TeacherLiveStream = ({
               <span className="text-red-400 text-xs">Muted</span>
             </div>
           )}
-          
+
           {/* Decorative corners */}
           <div className="absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-red-500/30 rounded-tl-lg" />
           <div className="absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-red-500/30 rounded-tr-lg" />
@@ -330,10 +370,10 @@ export const TeacherLiveStream = ({
               <Button
                 onClick={toggleMic}
                 size="lg"
-                className={`rounded-full w-16 h-16 shadow-2xl transition-all duration-300 ${
+                className={`rounded-full w-16 h-16 shadow-2xl transition-all duration-300 border border-white/10 ${
                   isMicOn
-                    ? "bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-blue-500/50"
-                    : "bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-500/50"
+                    ? "bg-gray-800 hover:bg-gray-700 shadow-black/40"
+                    : "bg-gray-900 hover:bg-gray-800 shadow-black/60"
                 }`}
               >
                 {isMicOn ? (
@@ -351,10 +391,10 @@ export const TeacherLiveStream = ({
               <Button
                 onClick={toggleCamera}
                 size="lg"
-                className={`rounded-full w-16 h-16 shadow-2xl transition-all duration-300 ${
+                className={`rounded-full w-16 h-16 shadow-2xl transition-all duration-300 border border-white/10 ${
                   isCameraOn
-                    ? "bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-purple-500/50"
-                    : "bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-500/50"
+                    ? "bg-gray-800 hover:bg-gray-700 shadow-black/40"
+                    : "bg-gray-900 hover:bg-gray-800 shadow-black/60"
                 }`}
               >
                 {isCameraOn ? (
@@ -372,10 +412,10 @@ export const TeacherLiveStream = ({
               <Button
                 onClick={toggleScreenShare}
                 size="lg"
-                className={`rounded-full w-16 h-16 shadow-2xl transition-all duration-300 ${
+                className={`rounded-full w-16 h-16 shadow-2xl transition-all duration-300 border border-white/10 ${
                   isScreenSharing
-                    ? "bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-green-500/50"
-                    : "bg-gradient-to-br from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 shadow-gray-500/50"
+                    ? "bg-gray-800 hover:bg-gray-700 shadow-black/40"
+                    : "bg-gray-900 hover:bg-gray-800 shadow-black/60"
                 }`}
               >
                 <Share2 className="h-6 w-6 text-white" />
@@ -390,10 +430,14 @@ export const TeacherLiveStream = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="text-xs text-gray-400">
-                <span className="text-white font-medium">{viewerCount}</span> watching
+                <span className="text-white font-medium">{viewerCount}</span>{" "}
+                watching
               </div>
               <div className="text-xs text-gray-400">
-                Duration: <span className="text-white font-medium">{formatDuration(streamStats.duration)}</span>
+                Duration:{" "}
+                <span className="text-white font-medium">
+                  {formatDuration(streamStats.duration)}
+                </span>
               </div>
             </div>
 

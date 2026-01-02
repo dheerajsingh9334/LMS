@@ -31,24 +31,27 @@ export const StudentFinalExam = ({
 }: StudentFinalExamProps) => {
   const router = useRouter();
   const [isStarting, setIsStarting] = useState(false);
-  const [examState, setExamState] = useState<"not-started" | "in-progress" | "completed">(
-    existingAttempt ? "completed" : "not-started"
-  );
+  const [examState, setExamState] = useState<
+    "not-started" | "in-progress" | "completed"
+  >(existingAttempt ? "completed" : "not-started");
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   const handleSubmitExam = useCallback(async () => {
     try {
-      const response = await axios.post(`/api/courses/${courseId}/final-exams/${finalExam.id}/submit`, {
-        answers,
-      });
+      const response = await axios.post(
+        `/api/courses/${courseId}/final-exams/${finalExam.id}/submit`,
+        {
+          answers,
+        }
+      );
 
       toast.success("Exam submitted successfully!");
       setExamState("completed");
-      
-      // Redirect to results or course page
-      router.push(`/courses/${courseId}`);
+
+      // After final exam, take student to certificate page
+      router.push(`/courses/${courseId}/certificate`);
       router.refresh();
     } catch (error) {
       toast.error("Failed to submit exam");
@@ -57,7 +60,11 @@ export const StudentFinalExam = ({
 
   // Initialize timer when exam starts
   useEffect(() => {
-    if (examState === "in-progress" && finalExam.timeLimit && timeLeft === null) {
+    if (
+      examState === "in-progress" &&
+      finalExam.timeLimit &&
+      timeLeft === null
+    ) {
       setTimeLeft(finalExam.timeLimit * 60); // Convert minutes to seconds
     }
   }, [examState, finalExam.timeLimit, timeLeft]);
@@ -95,9 +102,9 @@ export const StudentFinalExam = ({
   };
 
   const handleAnswerSelect = (questionId: string, answerIndex: number) => {
-    setAnswers(prev => ({
+    setAnswers((prev) => ({
       ...prev,
-      [questionId]: answerIndex
+      [questionId]: answerIndex,
     }));
   };
 
@@ -133,7 +140,9 @@ export const StudentFinalExam = ({
           <div className="space-y-2 mb-6">
             <div className="flex justify-between">
               <span>Score:</span>
-              <Badge variant={existingAttempt.passed ? "default" : "destructive"}>
+              <Badge
+                variant={existingAttempt.passed ? "default" : "destructive"}
+              >
                 {existingAttempt.score}%
               </Badge>
             </div>
@@ -146,9 +155,21 @@ export const StudentFinalExam = ({
               <span className="font-medium">{existingAttempt.grade}</span>
             </div>
           </div>
-          <Button onClick={() => router.push(`/courses/${courseId}`)}>
-            Back to Course
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button onClick={() => router.push(`/courses/${courseId}`)}>
+              Back to Course
+            </Button>
+            {!existingAttempt.passed && (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  router.push(`/courses/${courseId}/final-exam?retake=1`)
+                }
+              >
+                Retake Final Exam
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -167,9 +188,11 @@ export const StudentFinalExam = ({
           </CardHeader>
           <CardContent className="space-y-6">
             {finalExam.description && (
-              <p className="text-gray-600 text-center">{finalExam.description}</p>
+              <p className="text-gray-600 text-center">
+                {finalExam.description}
+              </p>
             )}
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600">
@@ -189,7 +212,9 @@ export const StudentFinalExam = ({
               <div className="text-center p-4 bg-yellow-50 rounded-lg">
                 <div className="flex items-center justify-center gap-2 text-yellow-700">
                   <Clock className="h-5 w-5" />
-                  <span className="font-medium">Time Limit: {finalExam.timeLimit} minutes</span>
+                  <span className="font-medium">
+                    Time Limit: {finalExam.timeLimit} minutes
+                  </span>
                 </div>
               </div>
             )}
@@ -199,7 +224,9 @@ export const StudentFinalExam = ({
               <ul className="text-sm text-gray-600 space-y-1">
                 <li>• Read each question carefully</li>
                 <li>• Select the best answer for each question</li>
-                <li>• You can review and change your answers before submitting</li>
+                <li>
+                  • You can review and change your answers before submitting
+                </li>
                 {finalExam.timeLimit && (
                   <li>• The exam will auto-submit when time runs out</li>
                 )}
@@ -224,7 +251,8 @@ export const StudentFinalExam = ({
   // Exam in progress
   if (examState === "in-progress") {
     const currentQuestion = finalExam.questions[currentQuestionIndex];
-    const progress = ((currentQuestionIndex + 1) / finalExam.questions.length) * 100;
+    const progress =
+      ((currentQuestionIndex + 1) / finalExam.questions.length) * 100;
 
     return (
       <div className="min-h-screen p-6">
@@ -232,10 +260,13 @@ export const StudentFinalExam = ({
         <div className="fixed top-0 left-0 right-0 bg-white border-b p-4 z-10">
           <div className="max-w-4xl mx-auto flex justify-between items-center">
             <div>
-              <span className="text-sm text-gray-600">Question {currentQuestionIndex + 1} of {finalExam.questions.length}</span>
+              <span className="text-sm text-gray-600">
+                Question {currentQuestionIndex + 1} of{" "}
+                {finalExam.questions.length}
+              </span>
               <div className="w-64 bg-gray-200 rounded-full h-2 mt-1">
-                <div 
-                  className="bg-blue-500 h-2 rounded-full transition-all" 
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -255,9 +286,7 @@ export const StudentFinalExam = ({
         <div className="max-w-4xl mx-auto pt-24 pb-8">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">
-                {currentQuestion.title}
-              </CardTitle>
+              <CardTitle className="text-lg">{currentQuestion.title}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -271,10 +300,14 @@ export const StudentFinalExam = ({
                       name={currentQuestion.id}
                       value={index}
                       checked={answers[currentQuestion.id] === index}
-                      onChange={() => handleAnswerSelect(currentQuestion.id, index)}
+                      onChange={() =>
+                        handleAnswerSelect(currentQuestion.id, index)
+                      }
                       className="mt-1"
                     />
-                    <span>{String.fromCharCode(65 + index)}. {option}</span>
+                    <span>
+                      {String.fromCharCode(65 + index)}. {option}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -282,15 +315,21 @@ export const StudentFinalExam = ({
               <div className="flex justify-between mt-8">
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
+                  onClick={() =>
+                    setCurrentQuestionIndex(
+                      Math.max(0, currentQuestionIndex - 1)
+                    )
+                  }
                   disabled={currentQuestionIndex === 0}
                 >
                   Previous
                 </Button>
-                
+
                 {currentQuestionIndex < finalExam.questions.length - 1 ? (
                   <Button
-                    onClick={() => setCurrentQuestionIndex(currentQuestionIndex + 1)}
+                    onClick={() =>
+                      setCurrentQuestionIndex(currentQuestionIndex + 1)
+                    }
                   >
                     Next
                   </Button>

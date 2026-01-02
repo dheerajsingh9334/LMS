@@ -12,7 +12,7 @@ const MainDashboardPage = async () => {
   // Redirect based on user role
   switch (user.role) {
     case UserRole.ADMIN:
-      return redirect("/admin/dashboard");
+      return redirect("/admin");
     case UserRole.TEACHER:
       return redirect("/teacher/dashboard");
     case UserRole.USER:

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import axios from "axios";
 import { format } from "date-fns";
 import { Download, Eye, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export const IssuedCertificatesList = ({
 }: IssuedCertificatesListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGrade, setFilterGrade] = useState("all");
+  const [issuing, setIssuing] = useState<Record<string, boolean>>({});
 
   const filteredCertificates = initialCertificates.filter((cert) => {
     const matchesSearch =
@@ -130,7 +132,9 @@ export const IssuedCertificatesList = ({
                     {certificate.studentEmail}
                   </TableCell>
                   <TableCell>
-                    <Badge className={getGradeBadgeColor(certificate.grade || "N/A")}>
+                    <Badge
+                      className={getGradeBadgeColor(certificate.grade || "N/A")}
+                    >
                       {certificate.grade || "N/A"}
                     </Badge>
                   </TableCell>
@@ -147,10 +151,12 @@ export const IssuedCertificatesList = ({
                   <TableCell>
                     <div className="text-xs space-y-1">
                       <div>
-                        Chapters: {certificate.completedChapters}/{certificate.totalChapters}
+                        Chapters: {certificate.completedChapters}/
+                        {certificate.totalChapters}
                       </div>
                       <div>
-                        Quizzes: {certificate.completedQuizzes}/{certificate.totalQuizzes}
+                        Quizzes: {certificate.completedQuizzes}/
+                        {certificate.totalQuizzes}
                       </div>
                       <div>
                         Assignments: {certificate.completedAssignments}/
@@ -168,12 +174,51 @@ export const IssuedCertificatesList = ({
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                      {/* Issue/Regenerate button */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={!!issuing[certificate.id]}
+                        onClick={async () => {
+                          try {
+                            setIssuing((s) => ({
+                              ...s,
+                              [certificate.id]: true,
+                            }));
+                            const res = await axios.post(
+                              `/api/courses/${courseId}/certificate/issue`,
+                              {
+                                certificateId: certificate.id,
+                              }
+                            );
+                            const url = res.data?.certificateUrl;
+                            if (url) {
+                              certificate.certificateUrl = url;
+                            }
+                          } catch (e) {
+                            console.error(e);
+                          } finally {
+                            setIssuing((s) => ({
+                              ...s,
+                              [certificate.id]: false,
+                            }));
+                          }
+                        }}
+                      >
+                        {issuing[certificate.id]
+                          ? "Issuing..."
+                          : certificate.certificateUrl
+                          ? "Regenerate"
+                          : "Issue"}
+                      </Button>
                       {certificate.certificateUrl && (
                         <>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => window.open(certificate.certificateUrl, "_blank")}
+                            onClick={() =>
+                              window.open(certificate.certificateUrl, "_blank")
+                            }
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -203,14 +248,17 @@ export const IssuedCertificatesList = ({
       {/* Summary */}
       <div className="flex justify-between items-center text-sm text-muted-foreground">
         <div>
-          Showing {filteredCertificates.length} of {initialCertificates.length} certificates
+          Showing {filteredCertificates.length} of {initialCertificates.length}{" "}
+          certificates
         </div>
         {initialCertificates.length > 0 && (
           <div>
             Average Score:{" "}
             {(
-              initialCertificates.reduce((sum, cert) => sum + cert.percentage, 0) /
-              initialCertificates.length
+              initialCertificates.reduce(
+                (sum, cert) => sum + cert.percentage,
+                0
+              ) / initialCertificates.length
             ).toFixed(1)}
             %
           </div>

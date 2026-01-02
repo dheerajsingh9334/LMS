@@ -22,16 +22,33 @@ export async function GET(
           select: {
             name: true,
             image: true,
-          }
-        }
+          },
+        },
       },
       orderBy: {
-        createdAt: "asc"
+        createdAt: "asc",
       },
       take: 100,
     });
 
-    return NextResponse.json(messages);
+    // Also include basic live-session status so teacher UI can
+    // display viewer count and live state without extra queries.
+    const liveSession = await db.liveSession.findUnique({
+      where: {
+        id: params.liveSessionId,
+        courseId: params.courseId,
+      },
+      select: {
+        viewCount: true,
+        isLive: true,
+      },
+    });
+
+    return NextResponse.json({
+      messages,
+      viewerCount: liveSession?.viewCount ?? 0,
+      isLive: liveSession?.isLive ?? false,
+    });
   } catch (error) {
     console.log("[LIVE_MESSAGES_GET]", error);
     return new NextResponse("Internal Error", { status: 500 });
@@ -60,18 +77,20 @@ export async function POST(
         id: params.liveSessionId,
         courseId: params.courseId,
         isLive: true,
-      }
+      },
     });
 
     if (!liveSession) {
-      return new NextResponse("Live session not found or inactive", { status: 404 });
+      return new NextResponse("Live session not found or inactive", {
+        status: 404,
+      });
     }
 
     // Check if user is teacher for this course
     const course = await db.course.findUnique({
       where: {
         id: params.courseId,
-      }
+      },
     });
 
     const isTeacher = course?.userId === user.id;
@@ -89,9 +108,9 @@ export async function POST(
           select: {
             name: true,
             image: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     return NextResponse.json(chatMessage);

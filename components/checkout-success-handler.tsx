@@ -21,13 +21,19 @@ export const CheckoutSuccessHandler = ({ courseId, userId }: CheckoutSuccessHand
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ userId }),
-      }).then(() => {
-        // Remove the success parameter from the URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        // Reload the page to reflect the purchase status
-        window.location.reload();
+      }).then(async (response) => {
+        if (response.ok) {
+          // Remove the success parameter from the URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          // Force a hard reload to update all states
+          window.location.href = `/courses/${courseId}/chapters`;
+        } else {
+          throw new Error('Purchase completion failed');
+        }
       }).catch((error) => {
         console.error("Failed to complete purchase:", error);
+        // Reload anyway to ensure UI is in a consistent state
+        window.location.reload();
       });
     }
   }, [success, courseId, userId]);

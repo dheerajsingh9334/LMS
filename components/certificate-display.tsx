@@ -91,7 +91,10 @@ export const CertificateDisplay = ({
     ctx.fillStyle = "#fcd34d";
     ctx.font = "bold 32px Arial";
     const maxWidth = 900;
-    const courseTitleText = courseTitle.length > 50 ? courseTitle.substring(0, 50) + "..." : courseTitle;
+    const courseTitleText =
+      courseTitle.length > 50
+        ? courseTitle.substring(0, 50) + "..."
+        : courseTitle;
     ctx.fillText(courseTitleText, 600, 420);
 
     // Score box
@@ -135,6 +138,41 @@ export const CertificateDisplay = ({
     });
   };
 
+  const downloadPdf = async () => {
+    try {
+      setIsLoading(true);
+      // Prefer arraybuffer to avoid blob parsing quirks across browsers
+      const response = await axios.get(
+        `/api/courses/${courseId}/certificate/pdf`,
+        {
+          responseType: "arraybuffer",
+        }
+      );
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      if (!blob || blob.size === 0) {
+        throw new Error("Empty PDF file received");
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `certificate-${courseTitle.replace(/\s+/g, "-")}.pdf`;
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Certificate PDF downloaded!");
+    } catch (error: any) {
+      const message =
+        error?.message || error?.response?.data || "Failed to download PDF";
+      toast.error(String(message));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (certificate) {
     return (
       <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
@@ -142,7 +180,9 @@ export const CertificateDisplay = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Award className="w-8 h-8 text-yellow-500" />
-              <CardTitle className="text-2xl">Certificate of Completion</CardTitle>
+              <CardTitle className="text-2xl">
+                Certificate of Completion
+              </CardTitle>
             </div>
             <Badge className="bg-green-500 text-white">
               <CheckCircle2 className="w-4 h-4 mr-1" />
@@ -157,7 +197,10 @@ export const CertificateDisplay = ({
                 Congratulations, {certificate.studentName}!
               </h3>
               <p className="text-gray-600">
-                You have successfully completed <span className="font-semibold text-blue-600">{courseTitle}</span>
+                You have successfully completed{" "}
+                <span className="font-semibold text-blue-600">
+                  {courseTitle}
+                </span>
               </p>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
@@ -188,7 +231,8 @@ export const CertificateDisplay = ({
               </div>
 
               <div className="text-sm text-gray-500">
-                Issued on: {new Date(certificate.issueDate).toLocaleDateString("en-US", {
+                Issued on:{" "}
+                {new Date(certificate.issueDate).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -197,14 +241,24 @@ export const CertificateDisplay = ({
             </div>
           </div>
 
-          <Button
-            onClick={downloadCertificate}
-            className="w-full bg-blue-600 hover:bg-blue-700"
-            size="lg"
-          >
-            <Download className="w-5 h-5 mr-2" />
-            Download Certificate
-          </Button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Button
+              onClick={downloadCertificate}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              size="lg"
+            >
+              <Download className="w-5 h-5 mr-2" />
+              Download PNG
+            </Button>
+            <Button
+              onClick={downloadPdf}
+              className="w-full bg-green-600 hover:bg-green-700"
+              size="lg"
+            >
+              <Download className="w-5 h-5 mr-2" />
+              Download PDF
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -222,7 +276,8 @@ export const CertificateDisplay = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-gray-600">
-          Complete all quizzes in this course to earn your certificate of completion!
+          Complete all quizzes in this course to earn your certificate of
+          completion!
         </p>
         <Button
           onClick={generateCertificate}
@@ -233,7 +288,8 @@ export const CertificateDisplay = ({
           {isLoading ? "Generating..." : "Generate Certificate"}
         </Button>
         <p className="text-xs text-gray-500 text-center">
-          * You must complete all quizzes with passing scores to generate the certificate
+          * You must complete all quizzes with passing scores to generate the
+          certificate
         </p>
       </CardContent>
     </Card>

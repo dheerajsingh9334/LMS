@@ -1,4 +1,4 @@
-import { Chapter, Course, UserProgress } from "@prisma/client"
+import { Chapter, Course, UserProgress } from "@prisma/client";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
@@ -9,7 +9,13 @@ import { checkPurchase } from "@/actions/Courses/get-purchase";
 import { currentUser } from "@/lib/auth";
 import { Logo } from "@/components/logo";
 import { getChapterAccessibility } from "@/lib/chapter-access";
-import { Award, FileText, HelpCircle, CheckCircle, AlertTriangle } from "lucide-react";
+import {
+  Award,
+  FileText,
+  HelpCircle,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
 import { CourseAttachments } from "./course-attachments";
 
 type progressProps = {
@@ -23,10 +29,10 @@ interface CourseSidebarProps {
     chapters: (Chapter & {
       userProgress: UserProgress[] | null;
       chapterVideos: any[];
-    })[]
+    })[];
   };
   progress: progressProps;
-};
+}
 
 export const CourseSidebar = async ({
   course,
@@ -36,27 +42,26 @@ export const CourseSidebar = async ({
   let userId = user?.id ?? "";
   const purchased = await checkPurchase(userId, course.id);
   const isInstructor = course.userId === userId;
-  
+
   // Get chapter accessibility with sequential progression
   const chapterAccessibility = await getChapterAccessibility(
-    userId, 
-    course.id, 
-    purchased, 
+    userId,
+    course.id,
+    purchased,
     isInstructor
   );
-  
+
   // Get assignments for each chapter
   const assignments = await db.assignment.findMany({
     where: {
       courseId: course.id,
       // Show all assignments for instructors, only published AND verified for students
-      ...(isInstructor 
-        ? {} 
-        : { 
+      ...(isInstructor
+        ? {}
+        : {
             isPublished: true,
-            verificationStatus: "verified" 
-          }
-      ),
+            verificationStatus: "verified",
+          }),
     },
     include: {
       submissions: {
@@ -114,7 +119,7 @@ export const CourseSidebar = async ({
 
   // Check if all chapters are completed for certificate eligibility
   const allChaptersCompleted = progress.progressPercentage === 100;
-  
+
   // Check if final exam is available (using new FinalExam model)
   const finalExam = await db.finalExam.findFirst({
     where: {
@@ -146,44 +151,49 @@ export const CourseSidebar = async ({
       },
     },
   });
-  
+
   // Check if final exam is completed (using the data from the finalExam query above)
   const latestFinalExamAttempt = finalExam?.attempts?.[0];
   const finalExamCompleted = latestFinalExamAttempt?.passed || false;
   const finalExamScore = latestFinalExamAttempt?.score || null;
-  
+
   // Check if user has a certificate (this means they passed the final exam)
   const certificate = await db.certificate.findUnique({
     where: {
       userId_courseId: {
         userId: userId,
         courseId: course.id,
-      }
-    }
+      },
+    },
   });
-  
+
   const hasCertificate = !!certificate;
   // User can access certificate if they have one OR if they can potentially earn one (completed all requirements)
-  const canAccessCertificate = (purchased || isInstructor) && (hasCertificate || (allChaptersCompleted && finalExamCompleted));
-  
+  const canAccessCertificate =
+    (purchased || isInstructor) &&
+    (hasCertificate || (allChaptersCompleted && finalExamCompleted));
+
   const finalExamAvailable = !!finalExam && finalExam.questions.length > 0;
-  
+
   const completionText = `(${progress.completedChapters}/${progress.totalChapters})`;
-  
+
   return (
     <div className="h-full w-72 border-r flex flex-col overflow-y-auto shadow-sm">
       <div className="p-8">
         <Logo />
       </div>
       <div className="px-8 flex flex-col border-b">
-        <h1 className="font-semibold ">
-          {course.title}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="font-semibold ">{course.title}</h1>
+          {progress.progressPercentage === 100 && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 uppercase tracking-wide">
+              Completed
+            </span>
+          )}
+        </div>
         {(purchased || isInstructor) && (
           <div className="mt-4">
-            <p>
-              Completed Chapters {completionText}
-            </p>
+            <p>Completed Chapters {completionText}</p>
             <div className="py-4">
               <CourseProgress
                 variant="success"
@@ -193,22 +203,22 @@ export const CourseSidebar = async ({
           </div>
         )}
       </div>
-      
+
       {/* Urgent Assignments Alert - Show overdue and due soon assignments */}
-      {(purchased || isInstructor) && (
+      {(purchased || isInstructor) &&
         (() => {
-          const urgentAssignments = assignments.filter(assignment => {
+          const urgentAssignments = assignments.filter((assignment) => {
             const submission = assignment.submissions[0];
             const isSubmitted = !!submission;
             const isGraded = submission?.status === "graded";
-            
+
             if (isSubmitted || isGraded) return false;
-            
+
             const today = new Date();
             const dueDate = new Date(assignment.dueDate);
             const diffTime = dueDate.getTime() - today.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
+
             // Show if overdue or due within 3 days
             return diffDays <= 3;
           });
@@ -230,17 +240,16 @@ export const CourseSidebar = async ({
                   const diffTime = dueDate.getTime() - today.getTime();
                   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                   const isOverdue = diffDays < 0;
-                  
+
                   return (
                     <div key={assignment.id} className="text-xs text-red-700">
                       <span className="font-medium">{assignment.title}</span>
                       <span className="ml-2">
-                        {isOverdue 
+                        {isOverdue
                           ? `${Math.abs(diffDays)} days overdue`
-                          : diffDays === 0 
+                          : diffDays === 0
                           ? "Due today"
-                          : `Due in ${diffDays} days`
-                        }
+                          : `Due in ${diffDays} days`}
                       </span>
                     </div>
                   );
@@ -253,9 +262,8 @@ export const CourseSidebar = async ({
               </div>
             </div>
           );
-        })()
-      )}
-      
+        })()}
+
       <div className="flex flex-col w-full">
         {/* Course Content Header */}
         <div className="px-6 py-3 border-b border-gray-200">
@@ -266,7 +274,7 @@ export const CourseSidebar = async ({
             {course.chapters.length} chapters • Track your progress
           </p>
         </div>
-        
+
         {/* Collapsible Chapters */}
         <CollapsibleSidebar
           chapters={course.chapters}
@@ -283,7 +291,7 @@ export const CourseSidebar = async ({
           hasCertificate={hasCertificate}
           canAccessCertificate={canAccessCertificate}
         />
-        
+
         {/* Attachments Section */}
         {(purchased || isInstructor) && (
           <div className="mt-4 pt-4 border-t border-gray-200">
@@ -299,5 +307,5 @@ export const CourseSidebar = async ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};

@@ -61,18 +61,6 @@ export async function POST(
       return new NextResponse("Final exam not available", { status: 403 });
     }
 
-    // Check if user already has an attempt
-    const existingAttempt = await db.finalExamAttempt.findFirst({
-      where: {
-        userId: user.id!,
-        finalExamId: finalExam.id,
-      },
-    });
-
-    if (existingAttempt) {
-      return new NextResponse("Exam already attempted", { status: 400 });
-    }
-
     // Calculate score
     let correctAnswers = 0;
     const totalQuestions = finalExam.questions.length;
@@ -133,7 +121,7 @@ export async function POST(
         where: {
           userId: user.id!,
           chapterId: {
-            in: publishedChapters.map(chapter => chapter.id),
+            in: publishedChapters.map((chapter) => chapter.id),
           },
           isCompleted: true,
         },

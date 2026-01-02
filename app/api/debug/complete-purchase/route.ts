@@ -6,13 +6,13 @@ import { db } from "@/lib/db";
 export async function POST(req: Request) {
   try {
     const user = await currentUser();
-    
+
     if (!user?.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     const { courseId } = await req.json();
-    
+
     if (!courseId) {
       return new NextResponse("Course ID required", { status: 400 });
     }
@@ -37,10 +37,10 @@ export async function POST(req: Request) {
           paymentStatus: "completed",
         },
       });
-      
-      return NextResponse.json({ 
-        message: "Purchase marked as completed", 
-        purchase: updatedPurchase 
+
+      return NextResponse.json({
+        message: "Purchase marked as completed",
+        purchase: updatedPurchase,
       });
     } else {
       // Create new completed purchase
@@ -50,16 +50,21 @@ export async function POST(req: Request) {
           courseId: courseId,
           amount: 0,
           paymentStatus: "completed",
+          // Synthetic id so the debug helper also respects
+          // the unique constraint on stripeSessionId
+          stripeSessionId: `debug_${user.id}_${courseId}_${Date.now()}`,
         },
       });
-      
-      return NextResponse.json({ 
-        message: "New purchase created and completed", 
-        purchase: newPurchase 
+
+      return NextResponse.json({
+        message: "New purchase created and completed",
+        purchase: newPurchase,
       });
     }
   } catch (error: any) {
     console.error("[DEBUG_COMPLETE_PURCHASE]", error);
-    return new NextResponse(`Internal Error: ${error.message}`, { status: 500 });
+    return new NextResponse(`Internal Error: ${error.message}`, {
+      status: 500,
+    });
   }
 }

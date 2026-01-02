@@ -12,9 +12,7 @@ const AuthSelectionPage = () => {
           <h1 className="text-5xl font-bold text-white mb-4">
             Welcome to LMS Platform
           </h1>
-          <p className="text-xl text-gray-300">
-            Choose your role to continue
-          </p>
+          <p className="text-xl text-gray-300">Choose your role to continue</p>
         </div>
 
         {/* Cards Container */}
@@ -89,8 +87,8 @@ const AuthSelectionPage = () => {
                 I&apos;m a Teacher
               </h2>
               <p className="text-gray-600 mb-6">
-                Create and manage courses, engage with students, and track
-                their progress.
+                Create and manage courses, engage with students, and track their
+                progress.
               </p>
 
               <div className="space-y-3 mb-6">
