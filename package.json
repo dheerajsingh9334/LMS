@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "next build && node scripts/fix-dashboard-manifest.js",
     "start": "next start",
     "lint": "next lint",
     "analyze": "cross-env ANALYZE=true next build",

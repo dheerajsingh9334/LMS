@@ -1,24 +1,28 @@
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { UserRole } from "@prisma/client";
+import { DashboardClientMarker } from "./_components/dashboard-client-marker";
 
 const MainDashboardPage = async () => {
   const user = await currentUser();
 
   if (!user?.id) {
-    return redirect("/auth/login");
+    redirect("/auth/login");
   }
 
   // Redirect based on user role
   switch (user.role) {
     case UserRole.ADMIN:
-      return redirect("/admin");
+      redirect("/admin");
     case UserRole.TEACHER:
-      return redirect("/teacher/dashboard");
+      redirect("/teacher/dashboard");
     case UserRole.USER:
     default:
-      return redirect("/student/dashboard");
+      redirect("/student/dashboard");
   }
+  
+  // Unreachable at runtime, but ensures a client reference
+  return <DashboardClientMarker />;
 };
 
 export default MainDashboardPage;
