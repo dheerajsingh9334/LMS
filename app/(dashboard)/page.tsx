@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { UserRole } from "@prisma/client";
-import { DashboardClientMarker } from "./_components/dashboard-client-marker";
 
 const MainDashboardPage = async () => {
   const user = await currentUser();
@@ -21,8 +20,8 @@ const MainDashboardPage = async () => {
       redirect("/student/dashboard");
   }
 
-  // Unreachable at runtime, but ensures a client reference
-  return <DashboardClientMarker />;
+  // All cases above redirect; this is never rendered.
+  return null;
 };
 
 export default MainDashboardPage;
