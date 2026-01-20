@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, User } from "lucide-react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { format } from "date-fns";
+import Image from "next/image";
 import { toast } from "sonner";
 
 interface LiveChatMessage {
@@ -42,25 +43,10 @@ export const LiveChat = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Load messages on component mount
-  useEffect(() => {
-    loadMessages();
-
-    // Set up polling for new messages every 2 seconds
-    const interval = setInterval(loadMessages, 2000);
-
-    return () => clearInterval(interval);
-  }, [courseId, liveSessionId]);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     try {
       const response = await fetch(
-        `/api/courses/${courseId}/live/${liveSessionId}/messages`
+        `/api/courses/${courseId}/live/${liveSessionId}/messages`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -76,7 +62,22 @@ export const LiveChat = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [courseId, liveSessionId]);
+
+  // Load messages on component mount
+  useEffect(() => {
+    loadMessages();
+
+    // Set up polling for new messages every 2 seconds
+    const interval = setInterval(loadMessages, 2000);
+
+    return () => clearInterval(interval);
+  }, [courseId, liveSessionId, loadMessages]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !user?.id) return;
@@ -93,7 +94,7 @@ export const LiveChat = ({
           body: JSON.stringify({
             message: newMessage.trim(),
           }),
-        }
+        },
       );
 
       if (response.ok) {
@@ -148,10 +149,12 @@ export const LiveChat = ({
                 {/* User Avatar */}
                 <div className="flex-shrink-0">
                   {message.user.image ? (
-                    <img
+                    <Image
                       src={message.user.image}
                       alt={message.user.name || "User"}
-                      className="w-6 h-6 rounded-full"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 rounded-full object-cover"
                     />
                   ) : (
                     <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">

@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -41,22 +47,22 @@ export const TeacherLiveSession = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    if (sessionId) {
-      fetchMessages();
-      const interval = setInterval(fetchMessages, 3000); // Poll every 3 seconds
-      return () => clearInterval(interval);
-    }
-  }, [sessionId]);
-
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     try {
       const response = await axios.get(`/api/live-sessions/${sessionId}/chat`);
       setMessages(response.data);
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (sessionId) {
+      fetchMessages();
+      const interval = setInterval(fetchMessages, 3000); // Poll every 3 seconds
+      return () => clearInterval(interval);
+    }
+  }, [sessionId, fetchMessages]);
 
   const startLive = async () => {
     try {
@@ -65,7 +71,7 @@ export const TeacherLiveSession = ({
         courseId,
         chapterId,
       });
-      
+
       setIsLive(true);
       toast.success("Live session started!");
     } catch (error) {
@@ -78,11 +84,11 @@ export const TeacherLiveSession = ({
       await axios.patch(`/api/live-sessions/${sessionId}`, {
         isLive: false,
       });
-      
+
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
       }
-      
+
       setIsLive(false);
       setIsCameraOn(false);
       setIsMicOn(false);
@@ -95,7 +101,9 @@ export const TeacherLiveSession = ({
   const toggleCamera = async () => {
     try {
       if (!isCameraOn) {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+        });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -115,7 +123,9 @@ export const TeacherLiveSession = ({
   const toggleMic = async () => {
     try {
       if (!isMicOn) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
         streamRef.current = stream;
         setIsMicOn(true);
       } else {
@@ -150,7 +160,9 @@ export const TeacherLiveSession = ({
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${isLive ? "bg-red-500 animate-pulse" : "bg-gray-400"}`} />
+                <div
+                  className={`w-3 h-3 rounded-full ${isLive ? "bg-red-500 animate-pulse" : "bg-gray-400"}`}
+                />
                 <CardTitle>{isLive ? "LIVE" : "Not Live"}</CardTitle>
               </div>
               <div className="flex items-center gap-2">
@@ -173,7 +185,7 @@ export const TeacherLiveSession = ({
                 </div>
               )}
             </div>
-            
+
             <div className="flex gap-2 justify-center">
               <Button
                 onClick={toggleCamera}
@@ -190,7 +202,10 @@ export const TeacherLiveSession = ({
                 {isMicOn ? <Mic /> : <MicOff />}
               </Button>
               {!isLive ? (
-                <Button onClick={startLive} className="bg-red-500 hover:bg-red-600">
+                <Button
+                  onClick={startLive}
+                  className="bg-red-500 hover:bg-red-600"
+                >
                   Go Live
                 </Button>
               ) : (

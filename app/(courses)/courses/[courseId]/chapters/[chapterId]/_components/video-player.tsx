@@ -1,6 +1,6 @@
-"use client"
+"use client";
 import axios from "axios";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { Loader2, Lock } from "lucide-react";
@@ -60,34 +60,43 @@ export const VideoPlayer = ({
   const router = useRouter();
   const confetti = useConfettiStore();
   const playerRef = useRef<any>(null);
-  
+
   // Analytics tracking
   const watchTimeRef = useRef(0);
   const lastProgressRef = useRef(0);
   const trackingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Track video watch time
-  const trackVideo = async (watchTime: number, completed: boolean, dropOffPoint?: number) => {
-    try {
-      await axios.post(`/api/courses/${courseId}/chapters/${chapterId}/track-video`, {
-        watchTime,
-        completed,
-        dropOffPoint,
-      });
-    } catch (error) {
-      console.error("Failed to track video:", error);
-    }
-  };
+  const trackVideo = useCallback(
+    async (watchTime: number, completed: boolean, dropOffPoint?: number) => {
+      try {
+        await axios.post(
+          `/api/courses/${courseId}/chapters/${chapterId}/track-video`,
+          {
+            watchTime,
+            completed,
+            dropOffPoint,
+          },
+        );
+      } catch (error) {
+        console.error("Failed to track video:", error);
+      }
+    },
+    [courseId, chapterId],
+  );
 
   const handleEnd = async () => {
     try {
       // Track final watch time
       await trackVideo(watchTimeRef.current, true);
-      
+
       if (completeOnEnd) {
-        await axios.put(`/api/courses/${courseId}/chapters/${chapterId}/progress`, {
-          isCompleted: true,
-        });
+        await axios.put(
+          `/api/courses/${courseId}/chapters/${chapterId}/progress`,
+          {
+            isCompleted: true,
+          },
+        );
 
         if (!nextChapterId) {
           confetti.onOpen();
@@ -106,7 +115,9 @@ export const VideoPlayer = ({
     }
   };
 
-  const handleRightClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+  const handleRightClick = (
+    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
+  ) => {
     e.preventDefault();
   };
 
@@ -153,7 +164,7 @@ export const VideoPlayer = ({
         if (playerRef.current) {
           const currentTime = playerRef.current.getCurrentTime();
           const timeSinceLastTrack = currentTime - lastProgressRef.current;
-          
+
           if (timeSinceLastTrack > 0) {
             watchTimeRef.current += timeSinceLastTrack;
             trackVideo(Math.floor(timeSinceLastTrack), false);
@@ -168,7 +179,7 @@ export const VideoPlayer = ({
         }
       };
     }
-  }, [isReady, isLocked, courseId, chapterId]);
+  }, [isReady, isLocked, trackVideo]);
 
   return (
     <div className="relative aspect-video">
@@ -180,9 +191,18 @@ export const VideoPlayer = ({
       )}
       {showQuizBlocker && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-800 flex-col gap-y-2 text-secondary z-50">
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "1rem",
+            }}
+          >
             <p className="text-lg font-semibold">Quiz Available!</p>
-            <p className="text-sm text-gray-300">Test your knowledge on this topic</p>
+            <p className="text-sm text-gray-300">
+              Test your knowledge on this topic
+            </p>
             <div className="flex gap-3">
               <button
                 onClick={startQuiz}
@@ -204,7 +224,9 @@ export const VideoPlayer = ({
                 Skip Quiz
               </button>
             </div>
-            <p className="text-xs text-gray-400 mt-2">You can take the quiz later from the Quizzes tab</p>
+            <p className="text-xs text-gray-400 mt-2">
+              You can take the quiz later from the Quizzes tab
+            </p>
           </div>
         </div>
       )}

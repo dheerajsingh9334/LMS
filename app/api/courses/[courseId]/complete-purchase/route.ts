@@ -55,8 +55,46 @@ export async function POST(
       },
     });
 
+    // If there is no pending purchase, it might already be completed by the webhook.
     if (!pendingPurchase) {
-      console.error("[COMPLETE_PURCHASE] No pending purchase found");
+      console.error(
+        "[COMPLETE_PURCHASE] No pending purchase found - checking for completed purchase"
+      );
+
+      const completedPurchase = await db.purchase.findFirst({
+        where: {
+          userId: user.id,
+          courseId: params.courseId,
+          paymentStatus: "completed",
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          id: true,
+          paymentStatus: true,
+          stripeSessionId: true,
+          createdAt: true,
+        },
+      });
+
+      if (completedPurchase) {
+        console.log(
+          "[COMPLETE_PURCHASE] Found already completed purchase, returning success:",
+          {
+            purchaseId: completedPurchase.id,
+            courseId: params.courseId,
+          }
+        );
+
+        return NextResponse.json({
+          success: true,
+          purchaseId: completedPurchase.id,
+          alreadyCompleted: true,
+        });
+      }
+
+      console.error("[COMPLETE_PURCHASE] No purchase found for user & course");
       return new NextResponse("No pending purchase found", { status: 404 });
     }
 

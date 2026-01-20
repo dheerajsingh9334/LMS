@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Video, VideoOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,14 +32,7 @@ export const GoLiveButton = ({ courseId, courseTitle }: GoLiveButtonProps) => {
   const [description, setDescription] = useState("");
   const router = useRouter();
 
-  useEffect(() => {
-    checkLiveStatus();
-    // Poll every 10 seconds
-    const interval = setInterval(checkLiveStatus, 10000);
-    return () => clearInterval(interval);
-  }, [courseId]);
-
-  const checkLiveStatus = async () => {
+  const checkLiveStatus = useCallback(async () => {
     try {
       const response = await axios.get(`/api/courses/${courseId}/live`);
       if (response.data) {
@@ -53,7 +46,14 @@ export const GoLiveButton = ({ courseId, courseTitle }: GoLiveButtonProps) => {
       setIsLive(false);
       setLiveSession(null);
     }
-  };
+  }, [courseId]);
+
+  useEffect(() => {
+    checkLiveStatus();
+    // Poll every 10 seconds
+    const interval = setInterval(checkLiveStatus, 10000);
+    return () => clearInterval(interval);
+  }, [checkLiveStatus]);
 
   const startLiveSession = async () => {
     try {
@@ -129,8 +129,8 @@ export const GoLiveButton = ({ courseId, courseTitle }: GoLiveButtonProps) => {
         <DialogHeader>
           <DialogTitle className="text-2xl">Start Live Session</DialogTitle>
           <DialogDescription>
-            Start a live streaming session for {courseTitle}. Your students will be
-            notified and can join instantly.
+            Start a live streaming session for {courseTitle}. Your students will
+            be notified and can join instantly.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -155,8 +155,8 @@ export const GoLiveButton = ({ courseId, courseTitle }: GoLiveButtonProps) => {
           </div>
           <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
             <p className="text-sm text-blue-800">
-              💡 <strong>Tip:</strong> Make sure your camera and microphone are working
-              before starting the live session.
+              💡 <strong>Tip:</strong> Make sure your camera and microphone are
+              working before starting the live session.
             </p>
           </div>
         </div>

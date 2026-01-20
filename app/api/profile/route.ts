@@ -13,9 +13,20 @@ export async function PATCH(req: Request) {
 
     const values = await req.json();
 
-    // Convert dateOfBirth string to Date if provided
-    if (values.dateOfBirth) {
-      values.dateOfBirth = new Date(values.dateOfBirth);
+    // Normalize dateOfBirth: allow null, convert valid strings to Date, strip empty/invalid
+    if ("dateOfBirth" in values) {
+      const dob = values.dateOfBirth;
+      if (dob === "" || dob === null || dob === undefined) {
+        values.dateOfBirth = null;
+      } else if (typeof dob === "string") {
+        const parsed = new Date(dob);
+        if (isNaN(parsed.getTime())) {
+          // Drop invalid date values instead of passing bad data to Prisma
+          delete values.dateOfBirth;
+        } else {
+          values.dateOfBirth = parsed;
+        }
+      }
     }
 
     const updatedUser = await db.user.update({

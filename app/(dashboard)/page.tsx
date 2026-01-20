@@ -20,7 +20,7 @@ const MainDashboardPage = async () => {
     default:
       redirect("/student/dashboard");
   }
-  
+
   // Unreachable at runtime, but ensures a client reference
   return <DashboardClientMarker />;
 };

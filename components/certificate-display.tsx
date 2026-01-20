@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Award, Download, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -108,7 +109,7 @@ export const CertificateDisplay = ({
     ctx.fillText(
       `Score: ${certificate.achievedScore} / ${certificate.totalScore}`,
       600,
-      550
+      550,
     );
 
     // Percentage
@@ -122,7 +123,7 @@ export const CertificateDisplay = ({
     ctx.fillText(
       `Issued on: ${new Date(certificate.issueDate).toLocaleDateString()}`,
       600,
-      680
+      680,
     );
 
     // Convert to blob and download
@@ -146,7 +147,7 @@ export const CertificateDisplay = ({
         `/api/courses/${courseId}/certificate/pdf`,
         {
           responseType: "arraybuffer",
-        }
+        },
       );
 
       const blob = new Blob([response.data], { type: "application/pdf" });
@@ -177,17 +178,28 @@ export const CertificateDisplay = ({
     return (
       <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Award className="w-8 h-8 text-yellow-500" />
               <CardTitle className="text-2xl">
                 Certificate of Completion
               </CardTitle>
             </div>
-            <Badge className="bg-green-500 text-white">
-              <CheckCircle2 className="w-4 h-4 mr-1" />
-              Earned
-            </Badge>
+            <div className="flex items-center gap-3">
+              <div className="relative h-14 w-14 rounded-md overflow-hidden bg-white border border-blue-200">
+                <Image
+                  src="/marwadi-university-logo.png"
+                  alt="College logo"
+                  fill
+                  className="object-contain p-1"
+                  sizes="56px"
+                />
+              </div>
+              <Badge className="bg-green-500 text-white">
+                <CheckCircle2 className="w-4 h-4 mr-1" />
+                Earned
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">

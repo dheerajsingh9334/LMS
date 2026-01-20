@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { CardDescription } from "@/components/ui/card";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -97,14 +98,14 @@ const StudentDashboard = async () => {
   const totalCourses = purchases.length;
   const totalChapters = purchases.reduce(
     (total, purchase) => total + purchase.course.chapters.length,
-    0
+    0,
   );
   const completedChapters = userProgress.filter(
-    (progress) => progress.isCompleted
+    (progress) => progress.isCompleted,
   ).length;
   const activeLiveSessions = purchases.reduce(
     (total, purchase) => total + purchase.course.liveSessions.length,
-    0
+    0,
   );
   const overallProgress =
     totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
@@ -116,8 +117,8 @@ const StudentDashboard = async () => {
       (progress) =>
         progress.isCompleted &&
         purchase.course.chapters.some(
-          (chapter) => chapter.id === progress.chapterId
-        )
+          (chapter) => chapter.id === progress.chapterId,
+        ),
     ).length;
     const courseProgress =
       courseChapters > 0 ? (courseCompleted / courseChapters) * 100 : 0;
@@ -310,9 +311,11 @@ const StudentDashboard = async () => {
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
                       {course.imageUrl ? (
-                        <img
+                        <Image
                           src={course.imageUrl}
                           alt={course.title}
+                          width={48}
+                          height={48}
                           className="w-full h-full object-cover rounded-lg"
                         />
                       ) : (

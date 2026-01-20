@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { OverviewChart } from "./overview-chart";
 import {
   Card,
@@ -29,6 +29,13 @@ import { FaUser } from "react-icons/fa";
 import { SkeletonLoader } from "./skeleton-loader";
 import LineChart from "@/app/(dashboard)/_components/lineChart";
 import BarChart from "@/app/(dashboard)/_components/barChart";
+import {
+  useGetTeacherOverviewQuery,
+  useGetTeacherRecentStudentsQuery,
+  useGetTeacherEnrollmentsQuery,
+  useGetTeacherReviewsQuery,
+  useGetTeacherEarningsQuery,
+} from "@/lib/storeApi";
 
 type RecentStudent = {
   name: string;
@@ -51,78 +58,45 @@ type EarningsData = {
   earnings: number;
 };
 
-type AnalyticsData = {
-  totalCourses: number;
-  totalStudents: number;
-  totalEarnings: number;
-  monthlyEarnings: number;
-  averageRating: number;
-  totalReviews: number;
-  completionRate: number;
-  enrollments: any[];
-  recentStudents: RecentStudent[];
-  recentReviews: RecentReview[];
-  earningsData: EarningsData[];
-  topPerformingCourses: any[];
-};
-
 export function AnalyticsDashboard() {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: overview, isLoading: loadingOverview } =
+    useGetTeacherOverviewQuery();
+  const { data: recentStudentsData, isLoading: loadingStudents } =
+    useGetTeacherRecentStudentsQuery();
+  const { data: enrollmentsData, isLoading: loadingEnrollments } =
+    useGetTeacherEnrollmentsQuery();
+  const { data: reviewsData, isLoading: loadingReviews } =
+    useGetTeacherReviewsQuery();
+  const { data: earningsData, isLoading: loadingEarnings } =
+    useGetTeacherEarningsQuery();
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setIsLoading(true);
+  const isLoading =
+    loadingOverview ||
+    loadingStudents ||
+    loadingEnrollments ||
+    loadingReviews ||
+    loadingEarnings;
 
-        // Fetch comprehensive analytics data
-        const [
-          overviewResponse,
-          studentsResponse,
-          enrollmentsResponse,
-          reviewsResponse,
-          earningsResponse,
-        ] = await Promise.all([
-          fetch("/api/teacher/analytics/summary"),
-          fetch("/api/teacher/analytics/recent-students"),
-          fetch("/api/teacher/analytics/enrollments"),
-          fetch("/api/teacher/analytics/reviews"),
-          fetch("/api/teacher/analytics/earnings"),
-        ]);
+  const data = useMemo(
+    () =>
+      overview &&
+      enrollmentsData &&
+      recentStudentsData &&
+      reviewsData &&
+      earningsData
+        ? {
+            ...overview,
+            recentStudents: recentStudentsData.recentStudents || [],
+            enrollments: enrollmentsData.enrollments || [],
+            recentReviews: reviewsData.recentReviews || [],
+            earningsData: earningsData.monthlyEarnings || [],
+            topPerformingCourses: earningsData.topCourses || [],
+          }
+        : null,
+    [overview, enrollmentsData, recentStudentsData, reviewsData, earningsData],
+  );
 
-        const [
-          overviewData,
-          studentsData,
-          enrollmentsData,
-          reviewsData,
-          earningsData,
-        ] = await Promise.all([
-          overviewResponse.json(),
-          studentsResponse.json(),
-          enrollmentsResponse.json(),
-          reviewsResponse.json(),
-          earningsResponse.json(),
-        ]);
-
-        setData({
-          ...overviewData,
-          recentStudents: studentsData.recentStudents || [],
-          enrollments: enrollmentsData.enrollments || [],
-          recentReviews: reviewsData.recentReviews || [],
-          earningsData: earningsData.monthlyEarnings || [],
-          topPerformingCourses: earningsData.topCourses || [],
-        });
-      } catch (error) {
-        console.error("Failed to fetch analytics data", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchData();
-  }, []);
-
-  if (isLoading) {
+  if (isLoading || !data) {
     return <SkeletonLoader />;
   }
 
@@ -296,7 +270,7 @@ export function AnalyticsDashboard() {
               const counts = [1, 2, 3, 4, 5].map(
                 (r) =>
                   (data?.recentReviews || []).filter((rv) => rv.rating === r)
-                    .length
+                    .length,
               );
               return (
                 <BarChart
@@ -401,10 +375,10 @@ export function AnalyticsDashboard() {
             <BarChart
               title="Students by Course"
               labels={(data?.topPerformingCourses || []).map(
-                (c: any) => c.title
+                (c: any) => c.title,
               )}
               data={(data?.topPerformingCourses || []).map(
-                (c: any) => Number(c.enrollments) || 0
+                (c: any) => Number(c.enrollments) || 0,
               )}
             />
           </CardContent>
@@ -421,10 +395,10 @@ export function AnalyticsDashboard() {
             <BarChart
               title="Earnings by Course"
               labels={(data?.topPerformingCourses || []).map(
-                (c: any) => c.title
+                (c: any) => c.title,
               )}
               data={(data?.topPerformingCourses || []).map(
-                (c: any) => Number(c.earnings) || 0
+                (c: any) => Number(c.earnings) || 0,
               )}
             />
           </CardContent>

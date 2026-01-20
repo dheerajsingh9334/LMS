@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import NotificationBar from "@/app/(dashboard)/_components/notificationBar";
+import { NotificationBell } from "@/components/notification-bell";
 
 export const NavbarRoutes = () => {
   const user = useCurrentUser();
@@ -59,7 +59,7 @@ export const NavbarRoutes = () => {
           </Link>
         ) : null}
 
-        {!isTeacherPage && <NotificationBar />}
+        <NotificationBell />
         <UserNav />
       </div>
     </>

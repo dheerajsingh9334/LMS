@@ -91,14 +91,14 @@ export default function ProfilePage() {
             twitter: "",
             website: "",
             github: "",
-          }
+          },
         );
       } catch (err) {
         console.error("[PROFILE_GET]", err);
       }
     };
     if (user) fetchProfile();
-  }, [user]);
+  }, [user, form]);
 
   const addAchievement = () => {
     if (newAchievement.trim()) {

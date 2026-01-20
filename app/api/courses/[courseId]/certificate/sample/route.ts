@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import crypto from "crypto";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { generateCertificatePdf } from "@/lib/certificates/generateCertificatePdf";
 
 function base64url(input: Buffer | string) {
   const b = Buffer.isBuffer(input) ? input : Buffer.from(input);
@@ -25,7 +25,7 @@ function signJwtHS256(payload: Record<string, any>, secret: string) {
 
 export async function GET(
   req: Request,
-  { params }: { params: { courseId: string } }
+  { params }: { params: { courseId: string } },
 ) {
   try {
     const user = await currentUser();
@@ -78,7 +78,7 @@ export async function GET(
           iat: now,
           exp: now + 60 * 5,
         },
-        apiSecret
+        apiSecret,
       );
 
       const genUrl = `${aud}/api/v4/documents/generate`;
@@ -88,7 +88,7 @@ export async function GET(
       const completionDateIso = new Date().toISOString();
       const completionDateText = new Date(completionDateIso).toLocaleDateString(
         "en-US",
-        { year: "numeric", month: "long", day: "numeric" }
+        { year: "numeric", month: "long", day: "numeric" },
       );
 
       const studentNameOverride = qp.get("studentName") || qp.get("name");
@@ -103,26 +103,26 @@ export async function GET(
 
       const finalStudentName = String(studentNameOverride || "Sample Student");
       const finalCourseTitle = String(
-        courseNameOverride || resolvedCourseTitle
+        courseNameOverride || resolvedCourseTitle,
       );
       const finalTeacherName = String(
-        teacherNameOverride || resolvedTeacherName
+        teacherNameOverride || resolvedTeacherName,
       );
       const finalCompletionDateIso = String(
-        completionDateOverride || completionDateIso
+        completionDateOverride || completionDateIso,
       );
       const finalCompletionDateText = new Date(
-        finalCompletionDateIso
+        finalCompletionDateIso,
       ).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
       });
       const finalSignatureName = String(
-        signatureNameOverride || finalTeacherName
+        signatureNameOverride || finalTeacherName,
       );
       const finalSignatureTitle = String(
-        signatureTitleOverride || "Course Instructor"
+        signatureTitleOverride || "Course Instructor",
       );
 
       // Requirements from template (use defaults if no template)
@@ -212,7 +212,7 @@ export async function GET(
           const buf = Buffer.from(cleaned, "base64");
           pdfBuffer = buf.buffer.slice(
             buf.byteOffset,
-            buf.byteOffset + buf.byteLength
+            buf.byteOffset + buf.byteLength,
           );
         } else if (typeof json?.url === "string") {
           const fileRes = await fetch(json.url, {
@@ -223,7 +223,7 @@ export async function GET(
             console.error(
               "[CERT_SAMPLE] Failed to fetch PDF URL:",
               fileRes.status,
-              t
+              t,
             );
             return new NextResponse("Failed to fetch sample PDF", {
               status: 502,
@@ -266,296 +266,23 @@ export async function GET(
     const studentNameParam = qp.get("studentName") || "Sample Student";
     const minPercentage = template?.minPercentage ?? 70;
 
-    const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([842, 595]); // Landscape A4
-    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const italicFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-
-    const { width, height } = page.getSize();
-
-    // Background gradient effect (light blue to white)
-    page.drawRectangle({
-      x: 0,
-      y: 0,
-      width,
-      height,
-      color: rgb(0.95, 0.97, 1),
-    });
-
-    // Decorative border - outer
-    page.drawRectangle({
-      x: 15,
-      y: 15,
-      width: width - 30,
-      height: height - 30,
-      borderColor: rgb(0.7, 0.75, 0.85),
-      borderWidth: 2,
-    });
-
-    // Inner border
-    page.drawRectangle({
-      x: 25,
-      y: 25,
-      width: width - 50,
-      height: height - 50,
-      borderColor: rgb(0.2, 0.35, 0.6),
-      borderWidth: 3,
-    });
-
-    // Corner decorations (simple lines)
-    const cornerSize = 30;
-    // Top-left
-    page.drawLine({
-      start: { x: 35, y: height - 35 },
-      end: { x: 35 + cornerSize, y: height - 35 },
-      thickness: 2,
-      color: rgb(0.6, 0.5, 0.2),
-    });
-    page.drawLine({
-      start: { x: 35, y: height - 35 },
-      end: { x: 35, y: height - 35 - cornerSize },
-      thickness: 2,
-      color: rgb(0.6, 0.5, 0.2),
-    });
-    // Top-right
-    page.drawLine({
-      start: { x: width - 35 - cornerSize, y: height - 35 },
-      end: { x: width - 35, y: height - 35 },
-      thickness: 2,
-      color: rgb(0.6, 0.5, 0.2),
-    });
-    page.drawLine({
-      start: { x: width - 35, y: height - 35 },
-      end: { x: width - 35, y: height - 35 - cornerSize },
-      thickness: 2,
-      color: rgb(0.6, 0.5, 0.2),
-    });
-    // Bottom-left
-    page.drawLine({
-      start: { x: 35, y: 35 },
-      end: { x: 35 + cornerSize, y: 35 },
-      thickness: 2,
-      color: rgb(0.6, 0.5, 0.2),
-    });
-    page.drawLine({
-      start: { x: 35, y: 35 },
-      end: { x: 35, y: 35 + cornerSize },
-      thickness: 2,
-      color: rgb(0.6, 0.5, 0.2),
-    });
-    // Bottom-right
-    page.drawLine({
-      start: { x: width - 35 - cornerSize, y: 35 },
-      end: { x: width - 35, y: 35 },
-      thickness: 2,
-      color: rgb(0.6, 0.5, 0.2),
-    });
-    page.drawLine({
-      start: { x: width - 35, y: 35 },
-      end: { x: width - 35, y: 35 + cornerSize },
-      thickness: 2,
-      color: rgb(0.6, 0.5, 0.2),
-    });
-
-    // Certificate Title (editable) - main heading
-    const title = certificateTitleParam.toUpperCase();
-    const titleSize = 32;
-    const titleWidth = boldFont.widthOfTextAtSize(title, titleSize);
-    page.drawText(title, {
-      x: (width - titleWidth) / 2,
-      y: height - 85,
-      size: titleSize,
-      font: boldFont,
-      color: rgb(0.15, 0.3, 0.5),
-    });
-
-    // Decorative line under title
-    page.drawLine({
-      start: { x: width / 2 - 150, y: height - 100 },
-      end: { x: width / 2 + 150, y: height - 100 },
-      thickness: 1.5,
-      color: rgb(0.6, 0.5, 0.2),
-    });
-
-    // "This is to certify that"
-    const certifyText = "This is to certify that";
-    const certifyWidth = italicFont.widthOfTextAtSize(certifyText, 14);
-    page.drawText(certifyText, {
-      x: (width - certifyWidth) / 2,
-      y: height - 140,
-      size: 14,
-      font: italicFont,
-      color: rgb(0.4, 0.4, 0.4),
-    });
-
-    // Student Name (Sample Student for preview)
-    const nameSize = 28;
-    const nameWidth = boldFont.widthOfTextAtSize(studentNameParam, nameSize);
-    page.drawText(studentNameParam, {
-      x: (width - nameWidth) / 2,
-      y: height - 175,
-      size: nameSize,
-      font: boldFont,
-      color: rgb(0.1, 0.1, 0.1),
-    });
-
-    // Underline for student name
-    page.drawLine({
-      start: { x: width / 2 - 120, y: height - 182 },
-      end: { x: width / 2 + 120, y: height - 182 },
-      thickness: 1,
-      color: rgb(0.3, 0.3, 0.3),
-    });
-
-    // "has successfully completed the course"
-    const completedText = "has successfully completed the course";
-    const completedWidth = italicFont.widthOfTextAtSize(completedText, 14);
-    page.drawText(completedText, {
-      x: (width - completedWidth) / 2,
-      y: height - 215,
-      size: 14,
-      font: italicFont,
-      color: rgb(0.4, 0.4, 0.4),
-    });
-
-    // Course Title (editable)
-    const courseSize = 22;
-    const courseWidth = boldFont.widthOfTextAtSize(
-      courseTitleParam,
-      courseSize
-    );
-    page.drawText(courseTitleParam, {
-      x: (width - courseWidth) / 2,
-      y: height - 250,
-      size: courseSize,
-      font: boldFont,
-      color: rgb(0.15, 0.3, 0.5),
-    });
-
-    // Instructor Name (editable)
-    const instructorLabel = "Instructor: ";
-    const instructorLabelWidth = regularFont.widthOfTextAtSize(
-      instructorLabel,
-      12
-    );
-    const instructorNameWidth = boldFont.widthOfTextAtSize(
-      teacherNameParam,
-      12
-    );
-    const totalInstructorWidth = instructorLabelWidth + instructorNameWidth;
-    page.drawText(instructorLabel, {
-      x: (width - totalInstructorWidth) / 2,
-      y: height - 285,
-      size: 12,
-      font: regularFont,
-      color: rgb(0.4, 0.4, 0.4),
-    });
-    page.drawText(teacherNameParam, {
-      x: (width - totalInstructorWidth) / 2 + instructorLabelWidth,
-      y: height - 285,
-      size: 12,
-      font: boldFont,
-      color: rgb(0.2, 0.2, 0.2),
-    });
-
-    // Score and Requirements
-    const scoreText = `Score: 95% (Minimum Required: ${minPercentage}%)`;
-    const scoreWidth = regularFont.widthOfTextAtSize(scoreText, 11);
-    page.drawText(scoreText, {
-      x: (width - scoreWidth) / 2,
-      y: height - 310,
-      size: 11,
-      font: regularFont,
-      color: rgb(0.1, 0.5, 0.2),
-    });
-
-    // Completion Date
-    const dateFormatted = new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const dateLabel = "Date of Completion: ";
-    const dateLabelWidth = regularFont.widthOfTextAtSize(dateLabel, 11);
-    const dateValueWidth = boldFont.widthOfTextAtSize(dateFormatted, 11);
-    const totalDateWidth = dateLabelWidth + dateValueWidth;
-    page.drawText(dateLabel, {
-      x: (width - totalDateWidth) / 2,
-      y: height - 335,
-      size: 11,
-      font: regularFont,
-      color: rgb(0.4, 0.4, 0.4),
-    });
-    page.drawText(dateFormatted, {
-      x: (width - totalDateWidth) / 2 + dateLabelWidth,
-      y: height - 335,
-      size: 11,
-      font: boldFont,
-      color: rgb(0.2, 0.2, 0.2),
-    });
-
-    // Signature Section (centered at bottom)
-    const sigLineY = 95;
-
-    // Signature line
-    page.drawLine({
-      start: { x: width / 2 - 100, y: sigLineY },
-      end: { x: width / 2 + 100, y: sigLineY },
-      thickness: 1,
-      color: rgb(0.3, 0.3, 0.3),
-    });
-
-    // Signature Name (editable)
-    const sigNameWidth = boldFont.widthOfTextAtSize(signatureNameParam, 14);
-    page.drawText(signatureNameParam, {
-      x: (width - sigNameWidth) / 2,
-      y: sigLineY + 15,
-      size: 14,
-      font: boldFont,
-      color: rgb(0.15, 0.15, 0.15),
-    });
-
-    // Signature Title (editable)
-    const sigTitleWidth = regularFont.widthOfTextAtSize(
-      signatureTitleParam,
-      11
-    );
-    page.drawText(signatureTitleParam, {
-      x: (width - sigTitleWidth) / 2,
-      y: sigLineY - 18,
-      size: 11,
-      font: regularFont,
-      color: rgb(0.4, 0.4, 0.4),
-    });
-
-    // Organization Name (editable) - if provided
-    if (organizationNameParam && organizationNameParam.trim()) {
-      const orgWidth = italicFont.widthOfTextAtSize(organizationNameParam, 10);
-      page.drawText(organizationNameParam, {
-        x: (width - orgWidth) / 2,
-        y: sigLineY - 35,
-        size: 10,
-        font: italicFont,
-        color: rgb(0.5, 0.5, 0.5),
-      });
-    }
-
-    // Verification code at bottom
     const verificationCode =
       "SAMPLE-PREVIEW-" + Date.now().toString(36).toUpperCase().slice(-6);
-    const verifyText = `Verification: ${verificationCode}`;
-    const verifyWidth = regularFont.widthOfTextAtSize(verifyText, 8);
-    page.drawText(verifyText, {
-      x: (width - verifyWidth) / 2,
-      y: 40,
-      size: 8,
-      font: regularFont,
-      color: rgb(0.6, 0.6, 0.6),
+
+    const pdfBytes = await generateCertificatePdf({
+      certificateTitle: certificateTitleParam,
+      studentName: studentNameParam,
+      courseTitle: courseTitleParam,
+      teacherName: teacherNameParam,
+      minPercentage,
+      scorePercent: 95,
+      issueDate: new Date(),
+      verificationCode,
+      signatureTitle: signatureTitleParam,
+      organizationNameUnderSignature: organizationNameParam,
     });
 
-    const pdfBytes = await pdfDoc.save();
-    return new Response(pdfBytes, {
+    return new Response(pdfBytes.buffer as ArrayBuffer, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

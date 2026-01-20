@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +25,7 @@ interface FinalExamQuestion {
   options: string[];
   correctAnswer: number;
   explanation?: string;
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  difficulty: "EASY" | "MEDIUM" | "HARD";
   topic: string;
 }
 
@@ -33,15 +39,13 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadExamData();
-  }, [courseId]);
-
-  const loadExamData = async () => {
+  const loadExamData = useCallback(async () => {
     try {
-      const response = await axios.get(`/api/courses/${courseId}/final-exam-questions`);
+      const response = await axios.get(
+        `/api/courses/${courseId}/final-exam-questions`,
+      );
       const data = response.data;
-      
+
       setQuestions(data.finalExamQuestions || []);
       setExamEnabled(data.finalExamEnabled || false);
     } catch (error) {
@@ -50,7 +54,11 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseId]);
+
+  useEffect(() => {
+    loadExamData();
+  }, [loadExamData]);
 
   const addQuestion = () => {
     const newQuestion: FinalExamQuestion = {
@@ -65,7 +73,11 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
     setQuestions([...questions, newQuestion]);
   };
 
-  const updateQuestion = (index: number, field: keyof FinalExamQuestion, value: any) => {
+  const updateQuestion = (
+    index: number,
+    field: keyof FinalExamQuestion,
+    value: any,
+  ) => {
     const updatedQuestions = [...questions];
     updatedQuestions[index] = {
       ...updatedQuestions[index],
@@ -74,7 +86,11 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
     setQuestions(updatedQuestions);
   };
 
-  const updateOption = (questionIndex: number, optionIndex: number, value: string) => {
+  const updateOption = (
+    questionIndex: number,
+    optionIndex: number,
+    value: string,
+  ) => {
     const updatedQuestions = [...questions];
     const options = [...updatedQuestions[questionIndex].options];
     options[optionIndex] = value;
@@ -93,12 +109,12 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
         toast.error("All questions must have content");
         return false;
       }
-      
-      if (question.options.some(opt => !opt.trim())) {
+
+      if (question.options.some((opt) => !opt.trim())) {
         toast.error("All options must have content");
         return false;
       }
-      
+
       if (!question.topic.trim()) {
         toast.error("All questions must have a topic");
         return false;
@@ -123,7 +139,7 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
         questions,
         enabled: examEnabled,
       });
-      
+
       toast.success("Final exam saved successfully!");
     } catch (error) {
       console.error("Error saving final exam:", error);
@@ -135,10 +151,14 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'EASY': return 'bg-green-500';
-      case 'MEDIUM': return 'bg-yellow-500';
-      case 'HARD': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case "EASY":
+        return "bg-green-500";
+      case "MEDIUM":
+        return "bg-yellow-500";
+      case "HARD":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
     }
   };
 
@@ -155,7 +175,7 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
             Create and manage the final exam questions for this course
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <Switch
@@ -165,7 +185,7 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
             />
             <Label>Enable Final Exam</Label>
           </div>
-          
+
           <Button onClick={saveExamData} disabled={saving}>
             <Save className="w-4 h-4 mr-2" />
             {saving ? "Saving..." : "Save Changes"}
@@ -203,23 +223,27 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
                 </div>
               </div>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Topic</Label>
                   <Input
                     value={question.topic}
-                    onChange={(e) => updateQuestion(index, "topic", e.target.value)}
+                    onChange={(e) =>
+                      updateQuestion(index, "topic", e.target.value)
+                    }
                     placeholder="e.g., React Components, Node.js, etc."
                   />
                 </div>
-                
+
                 <div>
                   <Label>Difficulty</Label>
                   <Select
                     value={question.difficulty}
-                    onValueChange={(value) => updateQuestion(index, "difficulty", value)}
+                    onValueChange={(value) =>
+                      updateQuestion(index, "difficulty", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -232,27 +256,34 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
                   </Select>
                 </div>
               </div>
-              
+
               <div>
                 <Label>Question</Label>
                 <Textarea
                   value={question.question}
-                  onChange={(e) => updateQuestion(index, "question", e.target.value)}
+                  onChange={(e) =>
+                    updateQuestion(index, "question", e.target.value)
+                  }
                   placeholder="Enter your question here..."
                   rows={3}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Options</Label>
                 {question.options.map((option, optionIndex) => (
-                  <div key={optionIndex} className="flex items-center space-x-2">
+                  <div
+                    key={optionIndex}
+                    className="flex items-center space-x-2"
+                  >
                     <div className="flex items-center">
                       <input
                         type="radio"
                         name={`correct-${question.id}`}
                         checked={question.correctAnswer === optionIndex}
-                        onChange={() => updateQuestion(index, "correctAnswer", optionIndex)}
+                        onChange={() =>
+                          updateQuestion(index, "correctAnswer", optionIndex)
+                        }
                         className="mr-2"
                       />
                       <span className="text-sm font-medium">
@@ -261,7 +292,9 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
                     </div>
                     <Input
                       value={option}
-                      onChange={(e) => updateOption(index, optionIndex, e.target.value)}
+                      onChange={(e) =>
+                        updateOption(index, optionIndex, e.target.value)
+                      }
                       placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
                       className="flex-1"
                     />
@@ -271,12 +304,14 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
                   Select the radio button to mark the correct answer
                 </p>
               </div>
-              
+
               <div>
                 <Label>Explanation (Optional)</Label>
                 <Textarea
                   value={question.explanation || ""}
-                  onChange={(e) => updateQuestion(index, "explanation", e.target.value)}
+                  onChange={(e) =>
+                    updateQuestion(index, "explanation", e.target.value)
+                  }
                   placeholder="Explain why this is the correct answer..."
                   rows={2}
                 />
@@ -301,19 +336,26 @@ export function FinalExamManager({ courseId }: FinalExamManagerProps) {
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="p-4 border rounded-lg">
               <div className="text-2xl font-bold text-blue-600">65%</div>
-              <div className="text-sm text-muted-foreground">Pass Threshold</div>
+              <div className="text-sm text-muted-foreground">
+                Pass Threshold
+              </div>
             </div>
             <div className="p-4 border rounded-lg">
               <div className="text-2xl font-bold text-green-600">80%</div>
-              <div className="text-sm text-muted-foreground">Certificate Eligible</div>
+              <div className="text-sm text-muted-foreground">
+                Certificate Eligible
+              </div>
             </div>
             <div className="p-4 border rounded-lg">
               <div className="text-2xl font-bold text-purple-600">90%</div>
-              <div className="text-sm text-muted-foreground">Excellence Award</div>
+              <div className="text-sm text-muted-foreground">
+                Excellence Award
+              </div>
             </div>
           </div>
           <p className="text-sm text-muted-foreground mt-4 text-center">
-            Students need at least 65% to pass the final exam and unlock certification
+            Students need at least 65% to pass the final exam and unlock
+            certification
           </p>
         </CardContent>
       </Card>

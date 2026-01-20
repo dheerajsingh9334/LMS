@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Radio, Users, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,14 +33,7 @@ export const JoinLiveButton = ({
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    checkLiveStatus();
-    // Poll every 5 seconds to check if session is live
-    const interval = setInterval(checkLiveStatus, 5000);
-    return () => clearInterval(interval);
-  }, [courseId]);
-
-  const checkLiveStatus = async () => {
+  const checkLiveStatus = useCallback(async () => {
     try {
       const response = await axios.get(`/api/courses/${courseId}/live`);
       if (response.data && response.data.isLive) {
@@ -58,7 +51,14 @@ export const JoinLiveButton = ({
       setIsLive(false);
       setLiveSession(null);
     }
-  };
+  }, [courseId, isOpen]);
+
+  useEffect(() => {
+    checkLiveStatus();
+    // Poll every 5 seconds to check if session is live
+    const interval = setInterval(checkLiveStatus, 5000);
+    return () => clearInterval(interval);
+  }, [checkLiveStatus]);
 
   const joinSession = async () => {
     try {
@@ -85,7 +85,7 @@ export const JoinLiveButton = ({
         size="lg"
         className={cn(
           "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white animate-pulse",
-          className
+          className,
         )}
       >
         {isLoading ? (

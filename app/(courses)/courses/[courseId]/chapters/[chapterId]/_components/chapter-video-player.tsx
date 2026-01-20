@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import toast from "react-hot-toast";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { VideoPlayerWithNotes } from "@/components/video-player-with-notes";
 import { useParams, useRouter } from "next/navigation";
 
@@ -23,7 +23,7 @@ export const ChapterVideoPlayer = ({
   const router = useRouter();
   const hasAutoCompletedRef = useRef(false);
 
-  const handleVideoEnded = async () => {
+  const handleVideoEnded = useCallback(async () => {
     if (!completeOnEnd) {
       return;
     }
@@ -33,7 +33,7 @@ export const ChapterVideoPlayer = ({
         `/api/courses/${params.courseId}/chapters/${params.chapterId}/progress`,
         {
           isCompleted: true,
-        }
+        },
       );
 
       if (onChapterComplete) {
@@ -54,7 +54,13 @@ export const ChapterVideoPlayer = ({
         toast.error("Something went wrong");
       }
     }
-  };
+  }, [
+    completeOnEnd,
+    onChapterComplete,
+    params.courseId,
+    params.chapterId,
+    router,
+  ]);
 
   const handleVideoProgress = (progress: number) => {
     // For direct uploaded videos, `progress` is percentage watched.
@@ -91,7 +97,7 @@ export const ChapterVideoPlayer = ({
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [completeOnEnd, url]);
+  }, [completeOnEnd, url, handleVideoEnded]);
 
   return (
     <VideoPlayerWithNotes

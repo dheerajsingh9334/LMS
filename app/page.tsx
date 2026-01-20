@@ -1,28 +1,19 @@
-"use client"
-
 import HeroSection from "@/components/HeroSection";
 import { redirect } from "next/navigation";
-import { useCurrentUser } from "@/hooks/use-current-user";
-import { useEffect, useState } from "react";
+import { currentUser } from "@/lib/auth";
 
-export default function Home() {
-  const [isMounted, setIsMounted] = useState(false);
+export default async function Home() {
+  const user = await currentUser();
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-    const user=useCurrentUser()
-    const userId=user?.id;
-   if(user){
+  if (user) {
     redirect("/dashboard");
-   }
+  }
+
   return (
     <main className="h-screen w-screen overflow-hidden">
-      <div >
-        <HeroSection  userId={userId} />
-       </div>
-        
+      <div>
+        <HeroSection />
+      </div>
     </main>
   );
 }

@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { UpdateDialog } from "@/components/dashboard/update-dialog";
-import { db } from "@/lib/db";
 import DoughnutChart from "../../../_components/doughnutChart";
 import { redirect } from "next/navigation";
 import DashboardCoursesCard from "./_components/dashboard-courses";
@@ -55,7 +54,7 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         const response = await fetch(
-          `/api/analytics/doughnutData?userId=${user.id}`
+          `/api/analytics/doughnutData?userId=${user.id}`,
         );
         const data = await response.json();
 
@@ -68,25 +67,23 @@ const Dashboard = () => {
         console.error("Error fetching chart data:", error);
       }
     };
-    const dailyCheckIn=async () => {
-     
+    const dailyCheckIn = async () => {
       try {
-           const response= await axios.post(`/api/user/trackUserActivity`);
-           setCheckInDates(response.data.checkInDates);
-          if(response.data.message==="First time" && !checkInShown){
-         toast.success("Daily Check-in");
-            setCheckInShown(true);
-          }
+        const response = await axios.post(`/api/user/trackUserActivity`);
+        setCheckInDates(response.data.checkInDates);
+        if (response.data.message === "First time" && !checkInShown) {
+          toast.success("Daily Check-in");
+          setCheckInShown(true);
+        }
       } catch (error) {
-          console.error("Error tracking daily check-In progress:", error);
+        console.error("Error tracking daily check-In progress:", error);
       }
-   
-    }
+    };
 
     fetchData();
-   dailyCheckIn();
-  }, [user.id,checkInShown]);
-  
+    dailyCheckIn();
+  }, [user.id, checkInShown]);
+
   const handleCloseDialog = () => {
     // Close the Dialog
     setShowDialog(false);
@@ -108,12 +105,24 @@ const Dashboard = () => {
           {chartData.data.length === 0 || chartData.labels.length === 0 ? (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-[400px] flex flex-col items-center justify-center">
               <div className="text-gray-400 mb-2">
-                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                <svg
+                  className="w-12 h-12 mx-auto"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
                 </svg>
               </div>
               <p className="text-gray-600 font-medium">No data available</p>
-              <p className="text-gray-400 text-sm mt-1">Start enrolling in courses to see progress</p>
+              <p className="text-gray-400 text-sm mt-1">
+                Start enrolling in courses to see progress
+              </p>
             </div>
           ) : (
             <DoughnutChart labels={chartData.labels} data={chartData.data} />

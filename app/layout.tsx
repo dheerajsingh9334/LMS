@@ -5,6 +5,7 @@ import "./globals.css";
 import { ConfettiProvider } from "@/components/providers/confetti-provider";
 import { ToastProvider } from "@/components/providers/toaster-provider";
 import { SessionWrapper } from "@/components/providers/session-provider";
+import { ReduxProvider } from "@/components/providers/redux-provider";
 
 // Optimize font loading - only load weights actually used
 const poppins = Poppins({
@@ -42,9 +43,11 @@ export default async function RootLayout({
     <SessionWrapper session={session}>
       <html lang="en" suppressHydrationWarning>
         <body className={poppins.className}>
-          <ConfettiProvider />
-          <ToastProvider />
-          {children}
+          <ReduxProvider>
+            <ConfettiProvider />
+            <ToastProvider />
+            {children}
+          </ReduxProvider>
         </body>
       </html>
     </SessionWrapper>

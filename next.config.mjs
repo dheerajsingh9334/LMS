@@ -4,7 +4,7 @@ const isDev = process.env.NODE_ENV === "development";
 const nextConfig = {
   // ✅ Images: allow external domains but disable optimization in dev
   images: {
-    unoptimized: isDev, // 🔥 THIS FIXES YOUR TIMEOUT ISSUE
+    unoptimized: isDev,
     remotePatterns: [
       {
         protocol: "https",

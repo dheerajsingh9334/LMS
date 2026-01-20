@@ -885,8 +885,8 @@ model CourseAnalytics {
   averageAssignmentScore     Float @default(0)
   
   // Time-based data (JSON arrays for charts)
-  dailyEnrollments   String[] @default([]) // JSON strings: {"date":"2024-01-01","count":5}
-  dailyRevenue       String[] @default([]) // JSON strings: {"date":"2024-01-01","amount":500}
+  dailyEnrollments   String[] @default([]) 
+  dailyRevenue       String[] @default([]) 
   
   lastCalculated  DateTime @updatedAt
   createdAt       DateTime @default(now())

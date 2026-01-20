@@ -1,8 +1,11 @@
 "use client";
 
-import ReactConfetti from "react-confetti";
-
 import { useConfettiStore } from "@/hooks/use-confetti-store";
+import dynamic from "next/dynamic";
+
+const ReactConfetti = dynamic(() => import("react-confetti"), {
+  ssr: false,
+});
 
 export const ConfettiProvider = () => {
   const confetti = useConfettiStore();
@@ -18,5 +21,5 @@ export const ConfettiProvider = () => {
         confetti.onClose();
       }}
     />
-  )
-}
+  );
+};

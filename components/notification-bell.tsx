@@ -1,7 +1,7 @@
 "use client";
 
 import { Bell } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import {
   DropdownMenu,
@@ -14,9 +14,35 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 
 export const NotificationBell = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  interface MessageNotification {
+    id: string;
+    title: string;
+    body: string;
+    isRead: boolean;
+    createdAt: string;
+  }
+
+  const [notifications, setNotifications] = useState<MessageNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const response = await axios.get("/api/user/messages");
+      const apiData = response.data as MessageNotification[];
+
+      if (!apiData || !Array.isArray(apiData)) {
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+      }
+
+      setNotifications(apiData);
+      setUnreadCount(apiData.filter((n) => !n.isRead).length);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
+  }, []);
 
   useEffect(() => {
     fetchNotifications();
@@ -25,38 +51,11 @@ export const NotificationBell = () => {
     const interval = setInterval(fetchNotifications, 30000);
 
     return () => clearInterval(interval);
-  }, []);
-
-  interface ApiNotification {
-    id: string;
-    courseName: string;
-    content: string;
-    teacherImage?: string | null;
-    timeAgo: string;
-    isRead: boolean;
-  }
-
-  const fetchNotifications = async () => {
-    try {
-      const response = await axios.get("/api/user/notifications");
-      const apiData = response.data?.Notifications as
-        | ApiNotification[]
-        | undefined;
-      if (!apiData) {
-        setNotifications([]);
-        setUnreadCount(0);
-        return;
-      }
-      setNotifications(apiData as any);
-      setUnreadCount(apiData.filter((n) => !n.isRead).length);
-    } catch (error) {
-      console.error("Failed to fetch notifications:", error);
-    }
-  };
+  }, [fetchNotifications]);
 
   const markAsRead = async (notificationId: string) => {
     try {
-      await axios.patch(`/api/user/notifications/${notificationId}`);
+      await axios.patch(`/api/user/messages/${notificationId}`);
       fetchNotifications();
     } catch (error) {
       console.error("Failed to mark notification as read:", error);
@@ -85,7 +84,7 @@ export const NotificationBell = () => {
               No notifications yet
             </div>
           ) : (
-            notifications.map((notification: any) => (
+            notifications.map((notification) => (
               <DropdownMenuItem
                 key={notification.id}
                 className={`p-4 cursor-pointer ${
@@ -96,14 +95,12 @@ export const NotificationBell = () => {
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium">
-                      {notification.content || "🔴 Live Class Started!"}
-                    </p>
+                    <p className="text-sm font-medium">{notification.title}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {notification.courseName}
+                      {notification.body}
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      {notification.timeAgo}
+                      {new Date(notification.createdAt).toLocaleString()}
                     </p>
                   </div>
                 </div>

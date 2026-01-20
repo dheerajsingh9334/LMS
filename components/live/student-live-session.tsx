@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,22 +41,22 @@ export const StudentLiveSession = ({
   const [viewCount, setViewCount] = useState(0);
   const [isLive, setIsLive] = useState(true);
 
-  useEffect(() => {
-    if (sessionId) {
-      fetchMessages();
-      const interval = setInterval(fetchMessages, 3000); // Poll every 3 seconds
-      return () => clearInterval(interval);
-    }
-  }, [sessionId]);
-
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     try {
       const response = await axios.get(`/api/live-sessions/${sessionId}/chat`);
       setMessages(response.data);
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (sessionId) {
+      fetchMessages();
+      const interval = setInterval(fetchMessages, 3000); // Poll every 3 seconds
+      return () => clearInterval(interval);
+    }
+  }, [sessionId, fetchMessages]);
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -73,7 +79,9 @@ export const StudentLiveSession = ({
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${isLive ? "bg-red-500 animate-pulse" : "bg-gray-400"}`} />
+                <div
+                  className={`w-3 h-3 rounded-full ${isLive ? "bg-red-500 animate-pulse" : "bg-gray-400"}`}
+                />
                 <CardTitle>{isLive ? "LIVE" : "Ended"}</CardTitle>
               </div>
               <div className="flex items-center gap-2">

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const user = await currentUser();
@@ -74,9 +76,12 @@ export async function GET() {
       const course = purchase.course;
       const totalChapters = course.chapters.length;
       const completedChapters = course.chapters.filter(
-        (chapter) => chapter.userProgress.length > 0 && chapter.userProgress[0].isCompleted
+        (chapter) =>
+          chapter.userProgress.length > 0 &&
+          chapter.userProgress[0].isCompleted,
       ).length;
-      const progress = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
+      const progress =
+        totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
 
       totalProgress += progress;
 
@@ -94,7 +99,8 @@ export async function GET() {
       };
     });
 
-    const averageProgress = totalCourses > 0 ? Math.round(totalProgress / totalCourses) : 0;
+    const averageProgress =
+      totalCourses > 0 ? Math.round(totalProgress / totalCourses) : 0;
 
     // Quiz performance
     const quizPerformance = quizAttempts.slice(0, 10).map((attempt) => {
@@ -131,7 +137,7 @@ export async function GET() {
       ([name, value]) => ({
         name,
         value,
-      })
+      }),
     );
 
     return NextResponse.json({

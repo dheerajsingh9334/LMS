@@ -1,5 +1,5 @@
 "use client";
-import { redirect} from "next/navigation";
+import { redirect } from "next/navigation";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useEffect, useState } from "react";
 import { Category, Chapter, Course } from "@prisma/client";
@@ -11,9 +11,7 @@ type CourseWithProgress = Course & {
   progress: number | null;
 };
 
-
-
-type Courses =  CourseWithProgress[];
+type Courses = CourseWithProgress[];
 
 const CollectionFavoritePage = () => {
   const user = useCurrentUser();
@@ -30,7 +28,6 @@ const CollectionFavoritePage = () => {
         const response = await fetch(`/api/user/favorite?userId=${user.id}`);
         const data = await response.json();
         setfavoriteCourses(data.favoriteCourses);
-        console.log(favoriteCourses);
       } catch (error) {
         console.log(error);
       } finally {
@@ -41,13 +38,12 @@ const CollectionFavoritePage = () => {
     fetchCourses();
   }, [user]);
 
-
   if (loading || !favoriteCourses) {
     return <div>Loading...</div>;
   }
   return (
     <>
-        <CoursesList items={favoriteCourses} />
+      <CoursesList items={favoriteCourses} />
     </>
   );
 };

@@ -6,12 +6,14 @@ interface LineChartProps {
   labels: string[];
   data: number[];
   title?: string;
+  isCurrency?: boolean;
 }
 
 const LineChart: React.FC<LineChartProps> = ({
   labels,
   data,
   title = "Chart",
+  isCurrency = false,
 }) => {
   const chartRef = useRef<Chart | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -25,6 +27,15 @@ const LineChart: React.FC<LineChartProps> = ({
     if (chartRef.current) {
       chartRef.current.destroy();
     }
+
+    const formatValue = (value: number | string) => {
+      if (!isCurrency) return value;
+      const numeric = typeof value === "string" ? Number(value) : value;
+      if (Number.isNaN(numeric)) return value;
+      return `₹${numeric.toLocaleString("en-IN", {
+        maximumFractionDigits: 2,
+      })}`;
+    };
 
     chartRef.current = new Chart(ctx, {
       type: "line",
@@ -48,7 +59,10 @@ const LineChart: React.FC<LineChartProps> = ({
         scales: {
           yAxes: [
             {
-              ticks: { beginAtZero: true },
+              ticks: {
+                beginAtZero: true,
+                callback: (value: string | number) => formatValue(value),
+              },
               gridLines: { color: "rgba(0,0,0,0.05)" },
             },
           ],
@@ -58,7 +72,14 @@ const LineChart: React.FC<LineChartProps> = ({
             },
           ],
         },
-        tooltips: { enabled: true },
+        tooltips: {
+          enabled: true,
+          callbacks: {
+            label: (tooltipItem: any) => {
+              return String(formatValue(tooltipItem.yLabel));
+            },
+          },
+        },
       },
     });
 
@@ -67,7 +88,7 @@ const LineChart: React.FC<LineChartProps> = ({
         chartRef.current.destroy();
       }
     };
-  }, [labels, data]);
+  }, [labels, data, isCurrency]);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">

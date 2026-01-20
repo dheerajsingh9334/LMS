@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Download, FileText, Trash } from "lucide-react";
@@ -39,16 +45,12 @@ export const NotesList = ({
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchNotes();
-  }, [courseId, chapterId]);
-
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     try {
       setIsLoading(true);
       const params = new URLSearchParams({ courseId });
       if (chapterId) params.append("chapterId", chapterId);
-      
+
       const response = await axios.get(`/api/notes?${params.toString()}`);
       setNotes(response.data);
     } catch (error) {
@@ -56,13 +58,21 @@ export const NotesList = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [courseId, chapterId]);
 
-  const handleDownload = async (noteId: string, fileUrl: string, fileName: string) => {
+  useEffect(() => {
+    fetchNotes();
+  }, [fetchNotes]);
+
+  const handleDownload = async (
+    noteId: string,
+    fileUrl: string,
+    fileName: string,
+  ) => {
     try {
       // Increment download count
       await axios.patch(`/api/notes/${noteId}`);
-      
+
       // Trigger download
       const link = document.createElement("a");
       link.href = fileUrl;
@@ -70,7 +80,7 @@ export const NotesList = ({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       toast.success("Download started");
       fetchNotes(); // Refresh to update download count
     } catch (error) {
@@ -131,17 +141,15 @@ export const NotesList = ({
                 )}
                 <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
                   <span>By {note.teacher.name}</span>
-                  <Badge variant="secondary">
-                    {note.downloads} downloads
-                  </Badge>
-                  <span>
-                    {new Date(note.createdAt).toLocaleDateString()}
-                  </span>
+                  <Badge variant="secondary">{note.downloads} downloads</Badge>
+                  <span>{new Date(note.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
               <div className="flex gap-2">
                 <Button
-                  onClick={() => handleDownload(note.id, note.fileUrl, note.fileName)}
+                  onClick={() =>
+                    handleDownload(note.id, note.fileUrl, note.fileName)
+                  }
                   size="sm"
                   variant="outline"
                 >
