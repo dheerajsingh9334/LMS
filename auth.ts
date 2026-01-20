@@ -1,9 +1,11 @@
 import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 import { UserRole, UserType } from "@prisma/client";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
-import authConfig from "@/auth.config";
-import { getUserById } from "@/data/user";
+import { LoginSchema } from "@/schemas";
+import { getUserById, getUserByEmail } from "@/data/user";
 import { getAccountByUserId } from "./data/account";
 
 export const {
@@ -14,10 +16,6 @@ export const {
   unstable_update,
 } = NextAuth({
   trustHost: true,
-  pages: {
-    signIn: "/auth/register",
-    error: "/auth/error",
-  },
   events: {
     async linkAccount({ user }) {
       await db.user.update({
@@ -30,14 +28,14 @@ export const {
     async signIn({ account, profile }) {
       // Allow credentials login (no profile)
       if (!account) return true;
-      
+
       // For OAuth providers, check email verification
       if (account.provider !== "credentials") {
         if (!profile?.email_verified) {
           return false;
         }
       }
-      
+
       return true;
     },
     async session({ token, session }) {
@@ -52,8 +50,6 @@ export const {
       if (token.userType && session.user) {
         session.user.userType = token.userType as UserType;
       }
-
-
 
       if (session.user) {
         session.user.name = token.name;
@@ -80,7 +76,6 @@ export const {
       token.role = existingUser.role;
       token.userType = existingUser.userType;
 
-
       // Check if the user's email exists in the teacher collection
       if (token.email) {
         const teacher = await db.teacher.findUnique({
@@ -98,14 +93,33 @@ export const {
             where: { id: existingUser.id },
             data: { role: UserRole.TEACHER },
           });
-
         }
       }
 
       return token;
     },
   },
-  adapter: PrismaAdapter(db),
   session: { strategy: "jwt" },
-  ...authConfig,
+  adapter: PrismaAdapter(db),
+  providers: [
+    Credentials({
+      async authorize(credentials) {
+        const validatedFields = LoginSchema.safeParse(credentials);
+
+        if (!validatedFields.success) {
+          return null;
+        }
+
+        const { email, password } = validatedFields.data;
+
+        const user = await getUserByEmail(email);
+        if (!user || !user.password) return null;
+
+        const passwordsMatch = await bcrypt.compare(password, user.password);
+        if (!passwordsMatch) return null;
+
+        return user;
+      },
+    }),
+  ],
 });

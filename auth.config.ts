@@ -1,29 +1,12 @@
-import bcrypt from "bcryptjs";
 import type { NextAuthConfig } from "next-auth";
-import Credentials from "next-auth/providers/credentials";
 
-import { LoginSchema } from "@/schemas";
-import { getUserByEmail } from "@/data/user";
+// Edge-safe base config used by middleware.
+// Do NOT import Node-only libraries (e.g. bcrypt, Prisma) here,
+// because this file is consumed by Next.js middleware (Edge runtime).
+const authConfig: NextAuthConfig = {
+  // Keep any shared, runtime-agnostic settings here.
+  // The detailed providers/adapter/callbacks live in auth.ts (Node runtime).
+  session: { strategy: "jwt" },
+};
 
-export default {
-  providers: [
-    Credentials({
-      async authorize(credentials) {
-        const validatedFields = LoginSchema.safeParse(credentials);
-
-        if (validatedFields.success) {
-          const { email, password } = validatedFields.data;
-
-          const user = await getUserByEmail(email);
-          if (!user || !user.password) return null;
-
-          const passwordsMatch = await bcrypt.compare(password, user.password);
-
-          if (passwordsMatch) return user;
-        }
-
-        return null;
-      },
-    }),
-  ],
-} satisfies NextAuthConfig;
+export default authConfig;
