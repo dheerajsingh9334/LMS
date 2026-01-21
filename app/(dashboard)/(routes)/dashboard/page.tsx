@@ -5,7 +5,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { UpdateDialog } from "@/components/dashboard/update-dialog";
 import DoughnutChart from "../../_components/doughnutChart";
 import { redirect } from "next/navigation";
-import DashboardCoursesCard from "./_components/dashboard-courses";
+import DashboardCoursesCard from "../(root)/dashboard/_components/dashboard-courses";
 import { trackUserActivity } from "@/lib/trackUserActivity";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -88,7 +88,9 @@ const Dashboard = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-[400px] flex flex-col items-center justify-center">
               <div className="text-gray-400 mb-2">...</div>
               <p className="text-gray-600 font-medium">No data available</p>
-              <p className="text-gray-400 text-sm mt-1">Start enrolling in courses to see progress</p>
+              <p className="text-gray-400 text-sm mt-1">
+                Start enrolling in courses to see progress
+              </p>
             </div>
           ) : (
             <DoughnutChart labels={chartData.labels} data={chartData.data} />
