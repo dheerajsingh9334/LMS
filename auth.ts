@@ -60,43 +60,60 @@ export const {
       return session;
     },
     async jwt({ token }) {
+      // If there's no subject/user id in token, just return
       if (!token.sub) return token;
 
-      // Fetch the existing user by ID
-      const existingUser = await getUserById(token.sub);
-      if (!existingUser) {
+      try {
+        // Avoid repeated DB work if core fields already exist
+        const hasCoreClaims = Boolean(
+          token.email &&
+          token.name &&
+          token.role &&
+          token.userType !== undefined,
+        );
+
+        // Fetch the existing user by ID only when we don't have all claims
+        const existingUser = hasCoreClaims
+          ? null
+          : await getUserById(token.sub);
+
+        // Populate claims from DB when needed
+        if (existingUser) {
+          token.name = existingUser.name;
+          token.email = existingUser.email;
+          token.role = existingUser.role;
+          token.userType = existingUser.userType;
+
+          // Fetch the existing account to mark OAuth
+          const existingAccount = await getAccountByUserId(existingUser.id);
+          token.isOAuth = !!existingAccount;
+        }
+
+        // Opportunistic teacher role sync (best-effort, non-fatal)
+        if (token.email) {
+          const teacher = await db.teacher.findUnique({
+            where: { email: token.email },
+          });
+
+          if (teacher && token.role !== UserRole.TEACHER) {
+            token.role = UserRole.TEACHER;
+            // Best-effort DB update; ignore failures
+            try {
+              await db.user.update({
+                where: { id: token.sub },
+                data: { role: UserRole.TEACHER },
+              });
+            } catch (_err) {
+              // swallow
+            }
+          }
+        }
+
+        return token;
+      } catch (_err) {
+        // On any DB/env error, keep existing token without crashing the request
         return token;
       }
-
-      // Fetch the existing account
-      const existingAccount = await getAccountByUserId(existingUser.id);
-      token.isOAuth = !!existingAccount;
-      token.name = existingUser.name;
-      token.email = existingUser.email;
-      token.role = existingUser.role;
-      token.userType = existingUser.userType;
-
-      // Check if the user's email exists in the teacher collection
-      if (token.email) {
-        const teacher = await db.teacher.findUnique({
-          where: {
-            email: token.email,
-          },
-        });
-
-        // If the email is found in the teacher collection and the user's current role is not already "TEACHER"
-        if (teacher && existingUser.role !== UserRole.TEACHER) {
-          token.role = UserRole.TEACHER;
-
-          // Update the user's role in the MongoDB database
-          await db.user.update({
-            where: { id: existingUser.id },
-            data: { role: UserRole.TEACHER },
-          });
-        }
-      }
-
-      return token;
     },
   },
   session: { strategy: "jwt" },
