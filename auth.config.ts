@@ -7,6 +7,9 @@ const authConfig: NextAuthConfig = {
   // Keep any shared, runtime-agnostic settings here.
   // The detailed providers/adapter/callbacks live in auth.ts (Node runtime).
   session: { strategy: "jwt" },
+  // Trust the request host (prevents UntrustedHost errors in Edge/middleware).
+  // In production, ensure NEXTAUTH_URL is set as well on the hosting platform.
+  trustHost: true,
   // No providers here: middleware only needs to read/verify sessions.
   // Defining an empty array satisfies the type without pulling in
   // Node-only providers like bcrypt-based credentials.
