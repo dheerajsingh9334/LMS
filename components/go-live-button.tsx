@@ -64,9 +64,13 @@ export const GoLiveButton = ({ courseId, courseTitle }: GoLiveButtonProps) => {
       });
       setLiveSession(response.data);
       setIsLive(true);
-      toast.success("Live session started! 🎥");
+      toast.success("Going live! 🎥");
       setIsOpen(false);
-      router.refresh();
+
+      // Redirect to the streaming page
+      router.push(
+        `/teacher/courses/${courseId}/live-sessions/${response.data.id}/stream`,
+      );
     } catch (error: any) {
       toast.error(error.response?.data || "Failed to start live session");
     } finally {
@@ -95,8 +99,23 @@ export const GoLiveButton = ({ courseId, courseTitle }: GoLiveButtonProps) => {
         <div className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg animate-pulse">
           <div className="w-3 h-3 bg-white rounded-full" />
           <span className="font-semibold">LIVE</span>
-          <span className="text-sm">({liveSession.viewCount} viewers)</span>
+          <span className="text-sm">
+            ({liveSession.viewCount || 0} viewers)
+          </span>
         </div>
+        <Button
+          onClick={() =>
+            router.push(
+              `/teacher/courses/${courseId}/live-sessions/${liveSession.id}/stream`,
+            )
+          }
+          variant="default"
+          size="lg"
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          <Video className="w-5 h-5 mr-2" />
+          Go to Stream
+        </Button>
         <Button
           onClick={endLiveSession}
           disabled={isLoading}

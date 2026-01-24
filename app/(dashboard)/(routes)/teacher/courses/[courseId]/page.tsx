@@ -271,18 +271,6 @@ const CourseIdPage = async ({ params }: { params: { courseId: string } }) => {
             </div>
             <div>
               <div className="flex items-center gap-x-2">
-                <IconBadge icon={Video} />
-                <h2 className="text-xl">Live Streaming</h2>
-              </div>
-              <div className="mt-2">
-                <LiveSessionForm
-                  courseId={course.id}
-                  activeLiveSession={activeLiveSession}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-x-2">
                 <IconBadge icon={GraduationCap} />
                 <h2 className="text-xl">Final Exam</h2>
               </div>
@@ -301,18 +289,6 @@ const CourseIdPage = async ({ params }: { params: { courseId: string } }) => {
                     Create and manage comprehensive final exams for your course
                   </p>
                 </div>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-x-2">
-                <IconBadge icon={Video} />
-                <h2 className="text-xl">Live Sessions</h2>
-              </div>
-              <div className="mt-2">
-                <LiveSessionForm
-                  courseId={course.id}
-                  activeLiveSession={activeLiveSession}
-                />
               </div>
             </div>
             <div>

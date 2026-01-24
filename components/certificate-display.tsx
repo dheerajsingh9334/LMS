@@ -42,101 +42,253 @@ export const CertificateDisplay = ({
   };
 
   const downloadCertificate = () => {
-    // Create a canvas element to draw the certificate
+    // Create a canvas element to draw the certificate (matching PDF style)
     const canvas = document.createElement("canvas");
-    canvas.width = 1200;
-    canvas.height = 800;
+    const width = 1200;  // Landscape A4 ratio
+    const height = 850;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext("2d");
 
     if (!ctx) return;
 
-    // Background
-    const gradient = ctx.createLinearGradient(0, 0, 1200, 800);
-    gradient.addColorStop(0, "#1e3a8a");
-    gradient.addColorStop(1, "#3b82f6");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 1200, 800);
+    // Load logo and draw certificate
+    const logo = new Image();
+    logo.crossOrigin = "anonymous";
+    logo.src = "/marwadi-university-logo.png";
 
-    // Border
-    ctx.strokeStyle = "#fbbf24";
-    ctx.lineWidth = 20;
-    ctx.strokeRect(30, 30, 1140, 740);
+    const drawCertificate = () => {
+      // Light background (matching PDF)
+      ctx.fillStyle = "#fcfcff";
+      ctx.fillRect(0, 0, width, height);
 
-    // Inner border
-    ctx.strokeStyle = "#fcd34d";
-    ctx.lineWidth = 5;
-    ctx.strokeRect(50, 50, 1100, 700);
+      // Outer border (gray)
+      ctx.strokeStyle = "#b3b3cc";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(25, 25, width - 50, height - 50);
 
-    // Title
-    ctx.fillStyle = "#fbbf24";
-    ctx.font = "bold 60px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("CERTIFICATE OF COMPLETION", 600, 150);
+      // Inner border (dark red/maroon)
+      ctx.strokeStyle = "#801a1a";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(42, 42, width - 84, height - 84);
 
-    // Subtitle
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "italic 24px Arial";
-    ctx.fillText("This is to certify that", 600, 220);
+      // Corner decorations (gold/brown color)
+      const cornerColor = "#998033";
+      const cornerSize = 40;
+      ctx.strokeStyle = cornerColor;
+      ctx.lineWidth = 3;
 
-    // Student name
-    ctx.fillStyle = "#fbbf24";
-    ctx.font = "bold 48px Arial";
-    ctx.fillText(certificate.studentName, 600, 300);
+      // Top-left corner
+      ctx.beginPath();
+      ctx.moveTo(48, height - 48);
+      ctx.lineTo(48 + cornerSize, height - 48);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(48, height - 48);
+      ctx.lineTo(48, height - 48 - cornerSize);
+      ctx.stroke();
 
-    // Course info
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "24px Arial";
-    ctx.fillText("has successfully completed the course", 600, 360);
+      // Top-right corner
+      ctx.beginPath();
+      ctx.moveTo(width - 48 - cornerSize, height - 48);
+      ctx.lineTo(width - 48, height - 48);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(width - 48, height - 48);
+      ctx.lineTo(width - 48, height - 48 - cornerSize);
+      ctx.stroke();
 
-    // Course title
-    ctx.fillStyle = "#fcd34d";
-    ctx.font = "bold 32px Arial";
-    const maxWidth = 900;
-    const courseTitleText =
-      courseTitle.length > 50
-        ? courseTitle.substring(0, 50) + "..."
-        : courseTitle;
-    ctx.fillText(courseTitleText, 600, 420);
+      // Bottom-left corner
+      ctx.beginPath();
+      ctx.moveTo(48, 48);
+      ctx.lineTo(48 + cornerSize, 48);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(48, 48);
+      ctx.lineTo(48, 48 + cornerSize);
+      ctx.stroke();
 
-    // Score box
-    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-    ctx.fillRect(400, 470, 400, 120);
+      // Bottom-right corner
+      ctx.beginPath();
+      ctx.moveTo(width - 48 - cornerSize, 48);
+      ctx.lineTo(width - 48, 48);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(width - 48, 48);
+      ctx.lineTo(width - 48, 48 + cornerSize);
+      ctx.stroke();
 
-    // Score details
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "24px Arial";
-    ctx.fillText(`Total Quizzes: ${certificate.totalQuizzes}`, 600, 510);
-    ctx.fillText(
-      `Score: ${certificate.achievedScore} / ${certificate.totalScore}`,
-      600,
-      550,
-    );
+      // Draw logo at top center
+      const logoWidth = 140;
+      const logoHeight = 140;
+      const logoX = (width - logoWidth) / 2;
+      const logoY = height - 170;
+      if (logo.complete && logo.naturalWidth > 0) {
+        ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
+      }
 
-    // Percentage
-    ctx.fillStyle = "#fbbf24";
-    ctx.font = "bold 32px Arial";
-    ctx.fillText(`${certificate.percentage.toFixed(2)}%`, 600, 590);
+      // Organization name under logo
+      const orgName = "Marwadi University";
+      ctx.font = "bold 22px Arial";
+      ctx.fillStyle = "#262640";
+      ctx.textAlign = "center";
+      ctx.fillText(orgName, width / 2, logoY - 15);
 
-    // Date
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "20px Arial";
-    ctx.fillText(
-      `Issued on: ${new Date(certificate.issueDate).toLocaleDateString()}`,
-      600,
-      680,
-    );
+      // Function to wrap text
+      const wrapText = (text: string, maxWidth: number, fontSize: number, fontWeight = "bold") => {
+        ctx.font = `${fontWeight} ${fontSize}px Arial`;
+        const words = text.split(" ");
+        const lines: string[] = [];
+        let currentLine = "";
 
-    // Convert to blob and download
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `certificate-${courseTitle.replace(/\s+/g, "-")}.png`;
-      link.click();
-      URL.revokeObjectURL(url);
-      toast.success("Certificate downloaded!");
-    });
+        for (let word of words) {
+          let metrics = ctx.measureText(word);
+          if (metrics.width > maxWidth) {
+            while (ctx.measureText(word + "...").width > maxWidth - 20 && word.length > 8) {
+              word = word.substring(0, word.length - 1);
+            }
+            word = word + "...";
+          }
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          metrics = ctx.measureText(testLine);
+          if (metrics.width > maxWidth && currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        if (currentLine) lines.push(currentLine);
+        return lines;
+      };
+
+      // Certificate title (blue color matching PDF)
+      const title = "CERTIFICATE OF COMPLETION";
+      const titleSize = 36;
+      const maxTitleWidth = width - 200;
+      ctx.font = `bold ${titleSize}px Arial`;
+      ctx.fillStyle = "#264d80"; // Blue color matching PDF
+      const titleLines = wrapText(title, maxTitleWidth, titleSize);
+      let titleY = logoY - 60;
+      for (const line of titleLines) {
+        ctx.fillText(line, width / 2, titleY);
+        titleY -= titleSize + 8;
+      }
+      const baseTitleY = logoY - 60;
+
+      // Decorative line under title
+      ctx.strokeStyle = "#998033";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(width / 2 - 200, baseTitleY - 20);
+      ctx.lineTo(width / 2 + 200, baseTitleY - 20);
+      ctx.stroke();
+
+      // "This is to certify that" (italic gray)
+      ctx.font = "italic 18px Arial";
+      ctx.fillStyle = "#666666";
+      ctx.fillText("This is to certify that", width / 2, baseTitleY - 55);
+
+      // Student name (bold black)
+      const studentName = certificate.studentName.substring(0, 60);
+      ctx.font = "bold 34px Arial";
+      ctx.fillStyle = "#1a1a1a";
+      const nameY = baseTitleY - 100;
+      ctx.fillText(studentName, width / 2, nameY);
+
+      // Underline for student name
+      ctx.strokeStyle = "#4d4d4d";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(width / 2 - 160, nameY - 10);
+      ctx.lineTo(width / 2 + 160, nameY - 10);
+      ctx.stroke();
+
+      // "has successfully completed the course" (italic gray)
+      ctx.font = "italic 18px Arial";
+      ctx.fillStyle = "#666666";
+      ctx.fillText("has successfully completed the course", width / 2, nameY - 45);
+
+      // Course title (blue, wrapped)
+      ctx.fillStyle = "#264d80";
+      const courseLines = wrapText(courseTitle, width - 200, 28);
+      let courseY = nameY - 85;
+      ctx.font = "bold 28px Arial";
+      for (const line of courseLines) {
+        ctx.fillText(line, width / 2, courseY);
+        courseY -= 32;
+      }
+
+      // Score info (green)
+      const scoreText = `Score: ${certificate.percentage.toFixed(2)}%`;
+      ctx.font = "16px Arial";
+      ctx.fillStyle = "#1a8033";
+      ctx.fillText(scoreText, width / 2, courseY - 25);
+
+      // Date of completion
+      const dateFormatted = new Date(certificate.issueDate).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      ctx.font = "15px Arial";
+      ctx.fillStyle = "#666666";
+      ctx.fillText(`Date of Completion: `, width / 2 - 70, courseY - 55);
+      ctx.font = "bold 15px Arial";
+      ctx.fillStyle = "#333333";
+      ctx.fillText(dateFormatted, width / 2 + 60, courseY - 55);
+
+      // Signature section
+      const sigY = 135;
+      
+      // Signature line
+      ctx.strokeStyle = "#4d4d4d";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(width / 2 - 130, sigY);
+      ctx.lineTo(width / 2 + 130, sigY);
+      ctx.stroke();
+
+      // Signature title
+      ctx.font = "14px Arial";
+      ctx.fillStyle = "#666666";
+      ctx.fillText("Course Instructor", width / 2, sigY - 15);
+
+      // Verification code if available
+      if (certificate.verificationCode) {
+        ctx.font = "11px Arial";
+        ctx.fillStyle = "#808080";
+        ctx.fillText(`Verification: ${certificate.verificationCode}`, width / 2, 70);
+      }
+    };
+
+    // Wait for logo to load, then draw
+    if (logo.complete) {
+      drawCertificate();
+      downloadCanvas();
+    } else {
+      logo.onload = () => {
+        drawCertificate();
+        downloadCanvas();
+      };
+      logo.onerror = () => {
+        drawCertificate();
+        downloadCanvas();
+      };
+    }
+
+    function downloadCanvas() {
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `certificate-${courseTitle.replace(/\s+/g, "-")}.png`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast.success("Certificate downloaded!");
+      });
+    }
   };
 
   const downloadPdf = async () => {
@@ -176,17 +328,17 @@ export const CertificateDisplay = ({
 
   if (certificate) {
     return (
-      <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
-        <CardHeader>
+      <Card className="border-2 border-gray-300 bg-gradient-to-br from-gray-50 to-white overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-amber-50 border-b border-gray-200">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <Award className="w-8 h-8 text-yellow-500" />
-              <CardTitle className="text-2xl">
+              <Award className="w-8 h-8 text-yellow-600" />
+              <CardTitle className="text-2xl text-gray-800">
                 Certificate of Completion
               </CardTitle>
             </div>
             <div className="flex items-center gap-3">
-              <div className="relative h-14 w-14 rounded-md overflow-hidden bg-white border border-blue-200">
+              <div className="relative h-14 w-14 rounded-md overflow-hidden bg-white border border-gray-200 shadow-sm">
                 <Image
                   src="/marwadi-university-logo.png"
                   alt="College logo"
@@ -195,65 +347,137 @@ export const CertificateDisplay = ({
                   sizes="56px"
                 />
               </div>
-              <Badge className="bg-green-500 text-white">
+              <Badge className="bg-green-600 text-white shadow-sm">
                 <CheckCircle2 className="w-4 h-4 mr-1" />
                 Earned
               </Badge>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="bg-white p-6 rounded-lg border-2 border-blue-300 shadow-lg">
-            <div className="text-center space-y-4">
-              <h3 className="text-xl font-semibold text-gray-800">
-                Congratulations, {certificate.studentName}!
-              </h3>
-              <p className="text-gray-600">
-                You have successfully completed{" "}
-                <span className="font-semibold text-blue-600">
+        <CardContent className="space-y-6 p-0">
+          {/* Certificate Preview - matches PDF style */}
+          <div className="relative mx-4 mt-4 rounded-lg overflow-hidden shadow-lg">
+            {/* Certificate visual */}
+            <div className="bg-[#fcfcff] p-8 border-4 border-[#801a1a] relative">
+              {/* Corner decorations */}
+              <div className="absolute top-3 left-3 w-8 h-8 border-t-2 border-l-2 border-[#998033]"></div>
+              <div className="absolute top-3 right-3 w-8 h-8 border-t-2 border-r-2 border-[#998033]"></div>
+              <div className="absolute bottom-3 left-3 w-8 h-8 border-b-2 border-l-2 border-[#998033]"></div>
+              <div className="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 border-[#998033]"></div>
+              
+              <div className="text-center space-y-4">
+                {/* Logo */}
+                <div className="flex justify-center mb-2">
+                  <div className="relative h-16 w-16">
+                    <Image
+                      src="/marwadi-university-logo.png"
+                      alt="University Logo"
+                      fill
+                      className="object-contain"
+                      sizes="64px"
+                    />
+                  </div>
+                </div>
+                
+                {/* Organization name */}
+                <p className="text-sm font-bold text-[#262640] tracking-wide">
+                  Marwadi University
+                </p>
+                
+                {/* Certificate title */}
+                <h2 className="text-2xl font-bold text-[#264d80] tracking-widest">
+                  CERTIFICATE OF COMPLETION
+                </h2>
+                
+                {/* Decorative line */}
+                <div className="flex justify-center">
+                  <div className="w-48 h-0.5 bg-[#998033]"></div>
+                </div>
+                
+                {/* Certify text */}
+                <p className="text-gray-500 italic text-sm">
+                  This is to certify that
+                </p>
+                
+                {/* Student name */}
+                <div className="py-2">
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {certificate.studentName}
+                  </h3>
+                  <div className="flex justify-center mt-1">
+                    <div className="w-40 h-px bg-gray-400"></div>
+                  </div>
+                </div>
+                
+                {/* Completed text */}
+                <p className="text-gray-500 italic text-sm">
+                  has successfully completed the course
+                </p>
+                
+                {/* Course title */}
+                <h4 className="text-xl font-bold text-[#264d80] px-8">
                   {courseTitle}
-                </span>
-              </p>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Total Quizzes</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {certificate.totalQuizzes}
-                  </p>
+                </h4>
+                
+                {/* Score */}
+                <p className="text-green-600 font-medium text-sm">
+                  Score: {certificate.percentage.toFixed(2)}%
+                </p>
+                
+                {/* Date */}
+                <p className="text-gray-500 text-sm">
+                  Date of Completion:{" "}
+                  <span className="font-medium text-gray-700">
+                    {new Date(certificate.issueDate).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
+                </p>
+                
+                {/* Signature section */}
+                <div className="pt-4">
+                  <div className="flex justify-center">
+                    <div className="w-32 h-px bg-gray-400"></div>
+                  </div>
+                  <p className="text-gray-500 text-xs mt-1">Course Instructor</p>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Completed</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {certificate.completedQuizzes}
-                  </p>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Your Score</p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {certificate.achievedScore}/{certificate.totalScore}
-                  </p>
-                </div>
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Percentage</p>
-                  <p className="text-2xl font-bold text-yellow-600">
-                    {certificate.percentage.toFixed(2)}%
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-sm text-gray-500">
-                Issued on:{" "}
-                {new Date(certificate.issueDate).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Stats cards */}
+          <div className="px-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                <p className="text-xs text-gray-600">Total Quizzes</p>
+                <p className="text-xl font-bold text-blue-600">
+                  {certificate.totalQuizzes}
+                </p>
+              </div>
+              <div className="bg-green-50 p-3 rounded-lg border border-green-100">
+                <p className="text-xs text-gray-600">Completed</p>
+                <p className="text-xl font-bold text-green-600">
+                  {certificate.completedQuizzes}
+                </p>
+              </div>
+              <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
+                <p className="text-xs text-gray-600">Your Score</p>
+                <p className="text-xl font-bold text-purple-600">
+                  {certificate.achievedScore}/{certificate.totalScore}
+                </p>
+              </div>
+              <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                <p className="text-xs text-gray-600">Percentage</p>
+                <p className="text-xl font-bold text-yellow-600">
+                  {certificate.percentage.toFixed(2)}%
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-4 pb-4">
             <Button
               onClick={downloadCertificate}
               className="w-full bg-blue-600 hover:bg-blue-700"

@@ -165,22 +165,79 @@ export async function generateCertificatePdf(
     color: rgb(0.6, 0.5, 0.2),
   });
 
-  // Main certificate title
+  // Main certificate title - with wrapping for long titles
   const title = certificateTitle.toUpperCase();
-  const titleSize = 32;
+  let titleSize = 28; // Reduced from 32 to fit better
+  const maxTitleWidth = width - 200; // Leave 100px padding on each side (increased from 60px)
+
+  // Function to wrap title text, handling long words
+  const wrapTitle = (
+    text: string,
+    maxWidth: number,
+    font: typeof boldFont,
+    fontSize: number,
+  ): string[] => {
+    const words = text.split(" ");
+    const lines: string[] = [];
+    let currentLine = "";
+
+    for (let word of words) {
+      // If a single word is too long, truncate it with ellipsis
+      let wordWidth = font.widthOfTextAtSize(word, fontSize);
+      if (wordWidth > maxWidth) {
+        // Truncate long words
+        while (wordWidth > maxWidth - 50 && word.length > 8) {
+          word = word.substring(0, word.length - 1);
+          wordWidth = font.widthOfTextAtSize(word + "...", fontSize);
+        }
+        word = word + "...";
+      }
+
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+      if (testWidth > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    return lines;
+  };
+
+  // Check if title is very long and reduce font size if needed
   const titleWidth = boldFont.widthOfTextAtSize(title, titleSize);
-  const titleY = height - 155;
-  page.drawText(title, {
-    x: (width - titleWidth) / 2,
-    y: titleY,
-    size: titleSize,
-    font: boldFont,
-    color: rgb(0.15, 0.3, 0.5),
-  });
+  if (titleWidth > maxTitleWidth * 1.5) {
+    titleSize = 22; // Reduce font size more aggressively for very long titles
+  }
+
+  const titleLines = wrapTitle(title, maxTitleWidth, boldFont, titleSize);
+  let titleY = height - 155;
+  const titleLineHeight = titleSize + 8;
+
+  // Draw each line of the title
+  for (const line of titleLines) {
+    const lineWidth = boldFont.widthOfTextAtSize(line, titleSize);
+    page.drawText(line, {
+      x: (width - lineWidth) / 2,
+      y: titleY,
+      size: titleSize,
+      font: boldFont,
+      color: rgb(0.15, 0.3, 0.5),
+    });
+    titleY -= titleLineHeight;
+  }
+
+  // Adjust for multi-line title offset
+  const titleOffset = (titleLines.length - 1) * titleLineHeight;
 
   page.drawLine({
-    start: { x: width / 2 - 150, y: titleY - 15 },
-    end: { x: width / 2 + 150, y: titleY - 15 },
+    start: { x: width / 2 - 150, y: titleY + titleLineHeight - 15 },
+    end: { x: width / 2 + 150, y: titleY + titleLineHeight - 15 },
     thickness: 1.5,
     color: rgb(0.6, 0.5, 0.2),
   });
@@ -188,7 +245,7 @@ export async function generateCertificatePdf(
   // "This is to certify that"
   const certifyText = "This is to certify that";
   const certifyWidth = italicFont.widthOfTextAtSize(certifyText, 14);
-  const certifyY = titleY - 55;
+  const certifyY = height - 155 - titleOffset - 55;
   page.drawText(certifyText, {
     x: (width - certifyWidth) / 2,
     y: certifyY,
