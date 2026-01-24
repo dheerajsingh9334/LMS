@@ -33,6 +33,8 @@ const nextConfig = {
       "bcrypt",
       "bcryptjs",
     ],
+    // Allow useSearchParams without Suspense boundary (fixes build errors)
+    missingSuspenseWithCSRBailout: false,
   },
 
   // Vercel deployment optimizations
