@@ -27,16 +27,12 @@ const nextConfig = {
   },
 
   experimental: {
-    optimizeCss: !isDev,
-    scrollRestoration: true,
     serverComponentsExternalPackages: [
       "@prisma/client",
       "prisma",
       "bcrypt",
       "bcryptjs",
     ],
-    // Vercel-specific optimizations
-    outputFileTracingRoot: process.cwd(),
   },
 
   // Vercel deployment optimizations
