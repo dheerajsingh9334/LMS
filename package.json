@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "vercel-build": "next build",
+    "build": "next build && node scripts/post-build-fix.js",
+    "vercel-build": "prisma generate && next build && node scripts/post-build-fix.js",
     "start": "next start",
     "lint": "next lint",
     "analyze": "cross-env ANALYZE=true next build",

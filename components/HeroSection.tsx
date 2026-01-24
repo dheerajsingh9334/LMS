@@ -1,14 +1,17 @@
 import Image from "next/image";
-import NavBar from "@/components/Navbar";
 import { Button } from "./ui/button";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+// Dynamically import Navbar to prevent SSR issues
+const NavBar = dynamic(() => import("@/components/Navbar"), {
+  ssr: false,
+});
 
 interface HeroProps {
-  userId?: string 
-};
-export default function HeroSection(
-  {userId}:HeroProps
-) {
+  userId?: string;
+}
+export default function HeroSection({ userId }: HeroProps) {
   return (
     <div>
       <NavBar userId={userId} />
@@ -27,16 +30,20 @@ export default function HeroSection(
                 Discover a new way to communicate & connect with fast, easy &
                 unlimited free chat today!
               </p>
-              {!userId &&  <Link href={"/auth/register"}>
-                <Button variant="default" size="custom">
-                  Get Started
-                </Button>
-              </Link>}
-             {userId &&  <Link href={"/dashboard"}>
-                <Button variant="default" size="custom">
-                  Get Started
-                </Button>
-              </Link>}
+              {!userId && (
+                <Link href={"/auth/register"}>
+                  <Button variant="default" size="custom">
+                    Get Started
+                  </Button>
+                </Link>
+              )}
+              {userId && (
+                <Link href={"/dashboard"}>
+                  <Button variant="default" size="custom">
+                    Get Started
+                  </Button>
+                </Link>
+              )}
             </div>
             <div className="text-left sm:max-w-none sm:-mr-[50px] md:-mr-[100px] sm:min-h-[400px] mt-[20px] sm:mt-0 ">
               <Image

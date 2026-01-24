@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { auth } from "@/auth";
 import "./globals.css";
+import "./runtime-config";
 import { ConfettiProvider } from "@/components/providers/confetti-provider";
 import { ToastProvider } from "@/components/providers/toaster-provider";
 import { SessionWrapper } from "@/components/providers/session-provider";
 import { ReduxProvider } from "@/components/providers/redux-provider";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 // Optimize font loading - only load weights actually used
 const poppins = Poppins({
@@ -43,11 +45,13 @@ export default async function RootLayout({
     <SessionWrapper session={session}>
       <html lang="en" suppressHydrationWarning>
         <body className={poppins.className}>
-          <ReduxProvider>
-            <ConfettiProvider />
-            <ToastProvider />
-            {children}
-          </ReduxProvider>
+          <ErrorBoundary>
+            <ReduxProvider>
+              <ConfettiProvider />
+              <ToastProvider />
+              {children}
+            </ReduxProvider>
+          </ErrorBoundary>
         </body>
       </html>
     </SessionWrapper>

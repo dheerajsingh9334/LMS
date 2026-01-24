@@ -12,7 +12,7 @@ export default async function Home() {
   return (
     <main className="h-screen w-screen overflow-hidden">
       <div>
-        <HeroSection />
+        <HeroSection userId={user?.id} />
       </div>
     </main>
   );

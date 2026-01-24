@@ -35,6 +35,14 @@ const nextConfig = {
       "bcrypt",
       "bcryptjs",
     ],
+    // Vercel-specific optimizations
+    outputFileTracingRoot: process.cwd(),
+  },
+
+  // Vercel deployment optimizations
+  generateEtags: false,
+  httpAgentOptions: {
+    keepAlive: true,
   },
 
   modularizeImports: {

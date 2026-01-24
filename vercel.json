@@ -1,0 +1,28 @@
+{
+  "buildCommand": "npm run vercel-build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "framework": "nextjs",
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    },
+    "app/api/courses/[courseId]/chapters/[chapterId]/track-video/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/courses/[courseId]/certificate/**/*.ts": {
+      "maxDuration": 45
+    }
+  },
+  "regions": ["iad1"],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production",
+      "SKIP_ENV_VALIDATION": "true"
+    }
+  }
+}
