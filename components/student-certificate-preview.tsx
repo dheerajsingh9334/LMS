@@ -21,15 +21,15 @@ export const StudentCertificatePreview = ({
   const loadPreview = async () => {
     try {
       setIsLoading(true);
-      // Always use the local pdf-lib rendering for preview so
-      // the certificate includes dynamic student + course details
-      // regardless of external generators.
-      // Add timestamp to bust cache and show latest template changes
+      
+      // Add timestamp and refresh params to bust cache
       const timestamp = new Date().getTime();
-      setPreviewUrl(
-        `/api/courses/${courseId}/certificate/pdf?useLocal=1&t=${timestamp}`,
-      );
+      const previewApiUrl = `/api/courses/${courseId}/certificate/pdf?preview=1&refresh=1&t=${timestamp}`;
+      
+      console.log("[CERTIFICATE_PREVIEW] Loading:", previewApiUrl);
+      setPreviewUrl(previewApiUrl);
     } catch (err: any) {
+      console.error("[CERTIFICATE_PREVIEW] Error:", err);
       toast.error(String(err?.message || "Failed to load preview"));
     } finally {
       setIsLoading(false);
@@ -47,6 +47,9 @@ export const StudentCertificatePreview = ({
 
   return (
     <div className={className}>
+      <div className="mb-2">
+        <h3 className="text-sm font-medium text-gray-700">Certificate Preview</h3>
+      </div>
       <div
         className="relative w-full border rounded-lg overflow-hidden bg-white"
         style={{ minHeight: 360 }}

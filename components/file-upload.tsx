@@ -83,14 +83,25 @@ export const FileUpload = ({
         }
       }}
       onUploadError={(error: Error) => {
-        console.error("Upload error:", error);
+        console.error("[FileUpload] Upload error details:", {
+          error: error?.message || "Unknown error",
+          stack: error?.stack,
+          endpoint,
+          timestamp: new Date().toISOString()
+        });
+        
         const msg = error?.message || "Unknown upload error";
-        if (msg.includes("FileSizeMismatch")) {
-          toast.error("File too large. Check the size limit.");
-        } else if (msg.includes("InvalidFileType")) {
-          toast.error("Unsupported file type. Try another format.");
+        
+        if (msg.includes("FileSizeMismatch") || msg.includes("size")) {
+          toast.error(`File too large. Maximum size: ${maxSizeMB}MB`);
+        } else if (msg.includes("InvalidFileType") || msg.includes("type")) {
+          toast.error(`Unsupported file type. Allowed: ${allowedTypes.join(", ")}`);
+        } else if (msg.includes("Unauthorized") || msg.includes("auth")) {
+          toast.error("Authentication failed. Please refresh and try again.");
+        } else if (msg.includes("Network") || msg.includes("fetch")) {
+          toast.error("Network error. Check your internet connection.");
         } else {
-          toast.error(`Upload failed: ${msg}`);
+          toast.error(`Upload failed: ${msg.length > 100 ? msg.substring(0, 100) + "..." : msg}`);
         }
       }}
       onBeforeUploadBegin={(files) => {

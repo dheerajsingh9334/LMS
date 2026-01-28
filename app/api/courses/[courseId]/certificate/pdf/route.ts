@@ -1,17 +1,27 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import path from "path";
-import { promises as fs } from "fs";
 import { generateCertificatePdf } from "@/lib/certificates/generateCertificatePdf";
+import { uploadPdfToUT } from "@/lib/uploadthing-server";
 
 // Clean, local pdf-lib based generator for the REAL student certificate.
 // No external PDF generator, no unused crypto/template code.
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: { courseId: string } },
 ) {
   try {
+    const url = new URL(req.url);
+    const forceRefresh = url.searchParams.get("refresh") === "1";
+    const isPreview = url.searchParams.get("preview") === "1";
+    
+    console.log("[CERTIFICATE_PDF] Request params:", { 
+      courseId: params.courseId,
+      forceRefresh,
+      isPreview,
+      timestamp: url.searchParams.get("t")
+    });
+
     const user = await currentUser();
 
     if (!user?.id) {
@@ -66,17 +76,16 @@ export async function GET(
       organizationNameUnderSignature: template?.organizationName || undefined,
     });
 
-    // Save locally and update certificateUrl (optional convenience)
+    // Upload to UploadThing and update certificateUrl
+    let uploadedUrl: string | null = null;
     try {
-      const uploadsDir = path.join(process.cwd(), "public", "uploads");
-      await fs.mkdir(uploadsDir, { recursive: true });
-      const filename = `certificate-${params.courseId}-${
-        user.id
-      }-${Date.now()}.pdf`;
-      const fullPath = path.join(uploadsDir, filename);
-      const bytes = new Uint8Array(pdfBytes);
-      await fs.writeFile(fullPath, bytes);
-      const publicUrl = `/uploads/${filename}`;
+      const filename = `certificate-${params.courseId}-${user.id}-${Date.now()}.pdf`;
+      const pdfBuffer = Buffer.from(pdfBytes);
+      
+      console.log("[CERTIFICATE_PDF] Attempting UploadThing upload...", { filename, bufferSize: pdfBuffer.length });
+      uploadedUrl = await uploadPdfToUT(pdfBuffer, filename);
+      
+      // Update certificate record with the cloud URL
       await db.certificate.update({
         where: {
           userId_courseId: {
@@ -84,10 +93,16 @@ export async function GET(
             courseId: params.courseId,
           },
         },
-        data: { certificateUrl: publicUrl },
+        data: { certificateUrl: uploadedUrl },
       });
-    } catch (e) {
-      console.warn("[CERTIFICATE_PDF] Failed to persist PDF", e);
+      
+      console.log("[CERTIFICATE_PDF] Successfully uploaded to UploadThing:", uploadedUrl);
+    } catch (error) {
+      console.error("[CERTIFICATE_PDF] Failed to upload to UploadThing:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      // Continue serving the PDF even if upload fails
     }
 
     return new Response(pdfBytes.buffer as ArrayBuffer, {
@@ -95,7 +110,10 @@ export async function GET(
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `inline; filename="certificate.pdf"`,
-        "Cache-Control": "no-cache",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+        "X-UploadThing-URL": uploadedUrl || "none",
       },
     });
   } catch (error) {

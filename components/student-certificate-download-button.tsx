@@ -25,9 +25,9 @@ export const StudentCertificateDownloadButton = ({
     try {
       setIsLoading(true);
 
-      // Use the local PDF generation endpoint so details always match
+      // Generate and download certificate PDF
       const res = await axios.get(
-        `/api/courses/${courseId}/certificate/pdf?useLocal=1`,
+        `/api/courses/${courseId}/certificate/pdf?download=1`,
         {
           responseType: "arraybuffer",
         }
