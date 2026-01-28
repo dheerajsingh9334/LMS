@@ -14,6 +14,8 @@ export const AdminGlobalAnnouncementForm = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [hasAnnouncement, setHasAnnouncement] = useState(false);
 
   useEffect(() => {
     // Load latest announcement to prefill (optional)
@@ -23,9 +25,13 @@ export const AdminGlobalAnnouncementForm = () => {
         if (res.data) {
           setTitle(res.data.title ?? "");
           setContent(res.data.content ?? "");
+          setHasAnnouncement(true);
+        } else {
+          setHasAnnouncement(false);
         }
       } catch (error) {
         console.error("Failed to load latest global announcement", error);
+        setHasAnnouncement(false);
       }
     };
 
@@ -41,12 +47,32 @@ export const AdminGlobalAnnouncementForm = () => {
         content,
         isActive: true,
       });
+      setHasAnnouncement(true);
       toast.success("Global announcement updated");
     } catch (error) {
       console.error(error);
       toast.error("Failed to save announcement");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onRemove = async () => {
+    if (!confirm("Are you sure you want to remove the announcement?")) {
+      return;
+    }
+    try {
+      setDeleting(true);
+      await axios.delete("/api/announcements/global");
+      setTitle("");
+      setContent("");
+      setHasAnnouncement(false);
+      toast.success("Announcement removed");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to remove announcement");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -76,12 +102,24 @@ export const AdminGlobalAnnouncementForm = () => {
               rows={4}
             />
           </div>
-          <Button
-            type="submit"
-            disabled={loading || !title.trim() || !content.trim()}
-          >
-            {loading ? "Saving..." : "Save announcement"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              disabled={loading || deleting || !title.trim() || !content.trim()}
+            >
+              {loading ? "Saving..." : "Save announcement"}
+            </Button>
+            {hasAnnouncement && (
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={loading || deleting}
+                onClick={onRemove}
+              >
+                {deleting ? "Removing..." : "Remove announcement"}
+              </Button>
+            )}
+          </div>
         </form>
       </CardContent>
     </Card>

@@ -29,7 +29,7 @@ function signJwtHS256(payload: Record<string, any>, secret: string) {
 // Body: { certificateId?: string, studentId?: string }
 export async function POST(
   req: Request,
-  { params }: { params: { courseId: string } }
+  { params }: { params: { courseId: string } },
 ) {
   try {
     const user = await currentUser();
@@ -46,7 +46,7 @@ export async function POST(
       return new NextResponse("Course not found", { status: 404 });
     }
 
-    const body = await req.json().catch(() => ({} as any));
+    const body = await req.json().catch(() => ({}) as any);
     const { certificateId, studentId } = body || {};
 
     // Locate certificate record
@@ -84,7 +84,7 @@ export async function POST(
       const aud = `https://${region}.pdfgeneratorapi.com`;
       const token = signJwtHS256(
         { iss: apiKey, sub: String(workspace), aud, iat: now, exp: now + 300 },
-        apiSecret
+        apiSecret,
       );
 
       // Load template settings for title/requirements
@@ -104,12 +104,12 @@ export async function POST(
         certificate.issueDate || new Date().toISOString();
       const completionDateText = new Date(completionDateIso).toLocaleDateString(
         "en-US",
-        { year: "numeric", month: "long", day: "numeric" }
+        { year: "numeric", month: "long", day: "numeric" },
       );
 
       const reqParts: string[] = [];
       const requirementMinPercentage = Number(
-        templateSettings?.minPercentage ?? 0
+        templateSettings?.minPercentage ?? 0,
       );
       const requirementAllChapters =
         templateSettings?.requireAllChapters ?? true;
@@ -128,20 +128,24 @@ export async function POST(
       const templateData = {
         studentName: String(certificate.studentName || "Student"),
         courseTitle: String(
-          certificate.course?.title || course.title || "Course"
+          certificate.course?.title || course.title || "Course",
         ),
         courseName: String(
-          certificate.course?.title || course.title || "Course"
+          certificate.course?.title || course.title || "Course",
         ),
-        teacherName: String(teacherName),
+        teacherName: String(templateSettings?.signatureName || teacherName),
         certificateTitle:
           templateSettings?.certificateTitle || "Certificate of Completion",
-        organizationName: String(course.title || ""),
+        organizationName: String(
+          templateSettings?.organizationName || course.title || "",
+        ),
         completionDate: completionDateIso,
         completionDateText,
         issueDate: certificate.issueDate || new Date().toISOString(),
-        signatureName: String(teacherName),
-        signatureTitle: "Course Instructor",
+        signatureName: String(templateSettings?.signatureName || teacherName),
+        signatureTitle: String(
+          templateSettings?.signatureTitle || "Course Instructor",
+        ),
         requirementMinPercentage,
         requirementAllChapters,
         requirementAllQuizzes,
@@ -287,10 +291,10 @@ export async function POST(
 
     const studentName = String(certificate.studentName || "Student").substring(
       0,
-      60
+      60,
     );
     const courseTitle = String(
-      certificate.course?.title || course.title || "Course"
+      certificate.course?.title || course.title || "Course",
     ).substring(0, 80);
     const issueDate = certificate.issueDate
       ? new Date(certificate.issueDate).toLocaleDateString("en-US", {
@@ -309,7 +313,7 @@ export async function POST(
       size: number,
       x?: number | null,
       y?: number | null,
-      bold?: boolean
+      bold?: boolean,
     ) => {
       const font = bold ? boldFont : regularFont;
       const textWidth = font.widthOfTextAtSize(text, size);
@@ -323,24 +327,24 @@ export async function POST(
       Math.max(18, fontSize - 2),
       template?.coursePositionX,
       template?.coursePositionY,
-      true
+      true,
     );
     drawText(
       studentName,
       fontSize,
       template?.namePositionX,
       template?.namePositionY,
-      true
+      true,
     );
     drawText(
       `Issued on: ${issueDate}`,
       Math.max(12, fontSize - 10),
       template?.datePositionX,
-      template?.datePositionY
+      template?.datePositionY,
     );
     page.drawText(
       `Verification Code: ${String(certificate.verificationCode)}`,
-      { x: 40, y: 40, size: 10, font: regularFont, color: rgb(0.4, 0.4, 0.4) }
+      { x: 40, y: 40, size: 10, font: regularFont, color: rgb(0.4, 0.4, 0.4) },
     );
 
     const pdfBytes = await pdfDoc.save();

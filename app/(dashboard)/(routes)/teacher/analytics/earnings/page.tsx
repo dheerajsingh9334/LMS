@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
-  DollarSign, 
+  IndianRupee, 
   TrendingUp, 
   Calendar, 
   CreditCard,
@@ -104,7 +104,7 @@ export default function EarningsPage() {
         <Card className="border-l-4 border-l-green-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
+              <IndianRupee className="h-4 w-4" />
               Total Earnings
             </CardTitle>
           </CardHeader>

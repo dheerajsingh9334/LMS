@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { unstable_update } from "@/auth";
 
 export async function PATCH(req: Request) {
   try {
@@ -32,6 +33,16 @@ export async function PATCH(req: Request) {
     const updatedUser = await db.user.update({
       where: { id: userId },
       data: values,
+    });
+
+    // Update the session with new user data
+    await unstable_update({
+      user: {
+        name: updatedUser.name,
+        email: updatedUser.email,
+        image: updatedUser.image,
+        role: updatedUser.role ?? undefined,
+      },
     });
 
     return NextResponse.json(updatedUser);

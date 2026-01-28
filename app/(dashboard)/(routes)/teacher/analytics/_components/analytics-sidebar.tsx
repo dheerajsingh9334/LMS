@@ -3,19 +3,19 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  BarChart, 
-  DollarSign, 
-  Star, 
-  MessageSquare, 
-  TrendingUp, 
-  Users, 
+import {
+  BarChart,
+  IndianRupee,
+  Star,
+  MessageSquare,
+  TrendingUp,
+  Users,
   BookOpen,
   Calendar,
   Target,
   Award,
   Eye,
-  Clock
+  Clock,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -39,38 +39,38 @@ const menuItems = [
     title: "Overview",
     href: "/teacher/analytics",
     icon: BarChart,
-    description: "General analytics"
+    description: "General analytics",
   },
   {
     title: "Earnings",
     href: "/teacher/analytics/earnings",
-    icon: DollarSign,
-    description: "Revenue & payments"
+    icon: IndianRupee,
+    description: "Revenue & payments",
   },
   {
     title: "Reviews & Ratings",
     href: "/teacher/analytics/reviews",
     icon: Star,
-    description: "Student feedback"
+    description: "Student feedback",
   },
   {
     title: "Courses",
     href: "/teacher/analytics/courses",
     icon: BookOpen,
-    description: "Course performance"
+    description: "Course performance",
   },
   {
     title: "Students",
     href: "/teacher/analytics/students",
     icon: Users,
-    description: "Student analytics"
+    description: "Student analytics",
   },
   {
     title: "Performance",
     href: "/teacher/analytics/performance",
     icon: TrendingUp,
-    description: "Growth metrics"
-  }
+    description: "Growth metrics",
+  },
 ];
 
 export function AnalyticsSidebar() {
@@ -81,11 +81,11 @@ export function AnalyticsSidebar() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch('/api/teacher/analytics/summary');
+        const response = await fetch("/api/teacher/analytics/summary");
         const result = await response.json();
         setData(result);
       } catch (error) {
-        console.error('Failed to fetch analytics summary:', error);
+        console.error("Failed to fetch analytics summary:", error);
       } finally {
         setIsLoading(false);
       }
@@ -103,12 +103,17 @@ export function AnalyticsSidebar() {
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-green-700 font-medium">Total Earnings</p>
+                  <p className="text-sm text-green-700 font-medium">
+                    Total Earnings
+                  </p>
                   <p className="text-xl font-bold text-green-800">
-                    ${isLoading ? "..." : data?.totalEarnings?.toLocaleString() || 0}
+                    ₹
+                    {isLoading
+                      ? "..."
+                      : data?.totalEarnings?.toLocaleString() || 0}
                   </p>
                 </div>
-                <DollarSign className="h-8 w-8 text-green-600" />
+                <IndianRupee className="h-8 w-8 text-green-600" />
               </div>
             </CardContent>
           </Card>
@@ -117,10 +122,14 @@ export function AnalyticsSidebar() {
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-blue-700 font-medium">Average Rating</p>
+                  <p className="text-sm text-blue-700 font-medium">
+                    Average Rating
+                  </p>
                   <div className="flex items-center gap-1">
                     <p className="text-xl font-bold text-blue-800">
-                      {isLoading ? "..." : data?.averageRating?.toFixed(1) || "0.0"}
+                      {isLoading
+                        ? "..."
+                        : data?.averageRating?.toFixed(1) || "0.0"}
                     </p>
                     <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                   </div>
@@ -134,9 +143,13 @@ export function AnalyticsSidebar() {
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-purple-700 font-medium">Total Students</p>
+                  <p className="text-sm text-purple-700 font-medium">
+                    Total Students
+                  </p>
                   <p className="text-xl font-bold text-purple-800">
-                    {isLoading ? "..." : data?.totalEnrollments?.toLocaleString() || 0}
+                    {isLoading
+                      ? "..."
+                      : data?.totalEnrollments?.toLocaleString() || 0}
                   </p>
                 </div>
                 <Users className="h-8 w-8 text-purple-600" />
@@ -148,7 +161,9 @@ export function AnalyticsSidebar() {
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-orange-700 font-medium">Completion Rate</p>
+                  <p className="text-sm text-orange-700 font-medium">
+                    Completion Rate
+                  </p>
                   <p className="text-xl font-bold text-orange-800">
                     {isLoading ? "..." : `${data?.completionRate || 0}%`}
                   </p>
@@ -172,7 +187,7 @@ export function AnalyticsSidebar() {
                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                 pathname === item.href
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
               )}
             >
               <item.icon className="h-4 w-4" />
@@ -191,11 +206,12 @@ export function AnalyticsSidebar() {
         <div className="space-y-3">
           <div className="flex items-center justify-between p-2 bg-muted rounded">
             <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-green-600" />
+              <IndianRupee className="h-4 w-4 text-green-600" />
               <span className="text-sm">Earnings</span>
             </div>
             <span className="text-sm font-semibold">
-              ${isLoading ? "..." : data?.monthlyEarnings?.toLocaleString() || 0}
+              ₹
+              {isLoading ? "..." : data?.monthlyEarnings?.toLocaleString() || 0}
             </span>
           </div>
 
@@ -247,11 +263,15 @@ export function AnalyticsSidebar() {
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Total Courses</span>
-            <span className="font-semibold">{isLoading ? "..." : data?.totalCourses || 0}</span>
+            <span className="font-semibold">
+              {isLoading ? "..." : data?.totalCourses || 0}
+            </span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Active Courses</span>
-            <span className="font-semibold text-green-600">{isLoading ? "..." : data?.activeCourses || 0}</span>
+            <span className="font-semibold text-green-600">
+              {isLoading ? "..." : data?.activeCourses || 0}
+            </span>
           </div>
         </div>
       </div>

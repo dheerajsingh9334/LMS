@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useSession } from "next-auth/react";
 import {
   Card,
   CardContent,
@@ -48,6 +49,7 @@ type ProfileFormValues = {
 
 export default function ProfilePage() {
   const user = useCurrentUser();
+  const { update } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [achievements, setAchievements] = useState<string[]>([]);
   const [newAchievement, setNewAchievement] = useState("");
@@ -133,7 +135,14 @@ export default function ProfilePage() {
       });
 
       if (!res.ok) throw new Error("Failed to update");
+
+      // Update the session to reflect new image
+      await update();
+
       toast.success("Profile updated successfully!");
+
+      // Refresh to show updated image in navbar
+      window.location.reload();
     } catch (err) {
       console.error("[PROFILE_UPDATE]", err);
       toast.error("Failed to update profile");

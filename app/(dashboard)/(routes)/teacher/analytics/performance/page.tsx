@@ -4,19 +4,19 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  TrendingUp, 
+import {
+  TrendingUp,
   TrendingDown,
-  BarChart, 
-  Target, 
+  BarChart,
+  Target,
   Calendar,
-  DollarSign,
+  IndianRupee,
   Users,
   Star,
   Award,
   Clock,
   Eye,
-  BookOpen
+  BookOpen,
 } from "lucide-react";
 
 interface PerformanceData {
@@ -37,7 +37,7 @@ interface PerformanceData {
     current: number | string;
     previous: number | string;
     change: number;
-    trend: 'up' | 'down' | 'stable';
+    trend: "up" | "down" | "stable";
     icon: any;
   }>;
   goals: Array<{
@@ -45,12 +45,12 @@ interface PerformanceData {
     current: number;
     target: number;
     unit: string;
-    status: 'on-track' | 'behind' | 'exceeded';
+    status: "on-track" | "behind" | "exceeded";
   }>;
   insights: Array<{
     category: string;
     message: string;
-    impact: 'positive' | 'negative' | 'neutral';
+    impact: "positive" | "negative" | "neutral";
     action?: string;
   }>;
 }
@@ -82,7 +82,7 @@ export default function PerformancePage() {
               current: 156,
               previous: 127,
               change: 23,
-              trend: 'up',
+              trend: "up",
               icon: Users,
             },
             {
@@ -90,15 +90,15 @@ export default function PerformancePage() {
               current: "$2,340",
               previous: "$2,040",
               change: 15,
-              trend: 'up',
-              icon: DollarSign,
+              trend: "up",
+              icon: IndianRupee,
             },
             {
               metric: "Course Completions",
               current: "78%",
               previous: "72%",
               change: 8,
-              trend: 'up',
+              trend: "up",
               icon: Target,
             },
             {
@@ -106,7 +106,7 @@ export default function PerformancePage() {
               current: "4.6★",
               previous: "4.4★",
               change: 5,
-              trend: 'up',
+              trend: "up",
               icon: Star,
             },
             {
@@ -114,7 +114,7 @@ export default function PerformancePage() {
               current: "45 min",
               previous: "42 min",
               change: 7,
-              trend: 'up',
+              trend: "up",
               icon: Clock,
             },
             {
@@ -122,7 +122,7 @@ export default function PerformancePage() {
               current: "84%",
               previous: "89%",
               change: -6,
-              trend: 'down',
+              trend: "down",
               icon: Eye,
             },
           ],
@@ -159,25 +159,31 @@ export default function PerformancePage() {
           insights: [
             {
               category: "Growth",
-              message: "Enrollment growth is 23% higher than last month, indicating strong course demand.",
+              message:
+                "Enrollment growth is 23% higher than last month, indicating strong course demand.",
               impact: "positive",
-              action: "Consider increasing course capacity or creating similar content.",
+              action:
+                "Consider increasing course capacity or creating similar content.",
             },
             {
               category: "Engagement",
-              message: "Video engagement dropped by 6% this month, review content quality and pacing.",
+              message:
+                "Video engagement dropped by 6% this month, review content quality and pacing.",
               impact: "negative",
-              action: "Analyze video analytics and consider shorter, more engaging content.",
+              action:
+                "Analyze video analytics and consider shorter, more engaging content.",
             },
             {
               category: "Revenue",
-              message: "Revenue growth is steady but below target. Pricing strategy may need adjustment.",
+              message:
+                "Revenue growth is steady but below target. Pricing strategy may need adjustment.",
               impact: "neutral",
               action: "Consider promotional campaigns or bundle offers.",
             },
             {
               category: "Quality",
-              message: "Student satisfaction exceeded target, maintain current teaching quality.",
+              message:
+                "Student satisfaction exceeded target, maintain current teaching quality.",
               impact: "positive",
             },
           ],
@@ -185,7 +191,7 @@ export default function PerformancePage() {
 
         setData(performanceData);
       } catch (error) {
-        console.error('Failed to fetch performance data:', error);
+        console.error("Failed to fetch performance data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -266,16 +272,22 @@ export default function PerformancePage() {
                 <div key={index} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <Icon className="h-5 w-5 text-gray-500" />
-                    <div className={`flex items-center gap-1 text-sm ${
-                      trend.trend === 'up' ? 'text-green-600' : 
-                      trend.trend === 'down' ? 'text-red-600' : 'text-gray-600'
-                    }`}>
-                      {trend.trend === 'up' ? (
+                    <div
+                      className={`flex items-center gap-1 text-sm ${
+                        trend.trend === "up"
+                          ? "text-green-600"
+                          : trend.trend === "down"
+                            ? "text-red-600"
+                            : "text-gray-600"
+                      }`}
+                    >
+                      {trend.trend === "up" ? (
                         <TrendingUp className="h-4 w-4" />
-                      ) : trend.trend === 'down' ? (
+                      ) : trend.trend === "down" ? (
                         <TrendingDown className="h-4 w-4" />
                       ) : null}
-                      {trend.change > 0 ? '+' : ''}{trend.change}%
+                      {trend.change > 0 ? "+" : ""}
+                      {trend.change}%
                     </div>
                   </div>
                   <h4 className="font-medium text-sm mb-1">{trend.metric}</h4>
@@ -301,38 +313,46 @@ export default function PerformancePage() {
         <CardContent className="space-y-6">
           {data?.goals?.map((goal, index) => {
             const progress = (goal.current / goal.target) * 100;
-            const isPercentage = goal.unit === '%';
+            const isPercentage = goal.unit === "%";
             const displayCurrent = isPercentage ? goal.current : goal.current;
             const displayTarget = isPercentage ? goal.target : goal.target;
-            
+
             return (
               <div key={index} className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-medium">{goal.title}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {displayCurrent}{goal.unit} of {displayTarget}{goal.unit} target
+                      {displayCurrent}
+                      {goal.unit} of {displayTarget}
+                      {goal.unit} target
                     </p>
                   </div>
-                  <Badge 
+                  <Badge
                     variant={
-                      goal.status === 'exceeded' ? 'default' : 
-                      goal.status === 'on-track' ? 'secondary' : 'destructive'
+                      goal.status === "exceeded"
+                        ? "default"
+                        : goal.status === "on-track"
+                          ? "secondary"
+                          : "destructive"
                     }
                     className="text-xs"
                   >
-                    {goal.status === 'exceeded' ? 'Exceeded' : 
-                     goal.status === 'on-track' ? 'On Track' : 'Behind'}
+                    {goal.status === "exceeded"
+                      ? "Exceeded"
+                      : goal.status === "on-track"
+                        ? "On Track"
+                        : "Behind"}
                   </Badge>
                 </div>
                 <div className="space-y-1">
-                  <Progress 
-                    value={Math.min(progress, 100)} 
-                    className="h-3"
-                  />
+                  <Progress value={Math.min(progress, 100)} className="h-3" />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>{Math.round(progress)}% complete</span>
-                    <span>Target: {displayTarget}{goal.unit}</span>
+                    <span>
+                      Target: {displayTarget}
+                      {goal.unit}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -353,24 +373,35 @@ export default function PerformancePage() {
           {data?.insights?.map((insight, index) => (
             <div key={index} className="border rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                  insight.impact === 'positive' ? 'bg-green-500' :
-                  insight.impact === 'negative' ? 'bg-red-500' : 'bg-gray-500'
-                }`} />
+                <div
+                  className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                    insight.impact === "positive"
+                      ? "bg-green-500"
+                      : insight.impact === "negative"
+                        ? "bg-red-500"
+                        : "bg-gray-500"
+                  }`}
+                />
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <Badge variant="outline" className="text-xs">
                       {insight.category}
                     </Badge>
-                    <Badge 
+                    <Badge
                       variant={
-                        insight.impact === 'positive' ? 'default' :
-                        insight.impact === 'negative' ? 'destructive' : 'secondary'
+                        insight.impact === "positive"
+                          ? "default"
+                          : insight.impact === "negative"
+                            ? "destructive"
+                            : "secondary"
                       }
                       className="text-xs"
                     >
-                      {insight.impact === 'positive' ? 'Positive' :
-                       insight.impact === 'negative' ? 'Needs Attention' : 'Neutral'}
+                      {insight.impact === "positive"
+                        ? "Positive"
+                        : insight.impact === "negative"
+                          ? "Needs Attention"
+                          : "Neutral"}
                     </Badge>
                   </div>
                   <p className="text-sm mb-2">{insight.message}</p>
@@ -421,7 +452,9 @@ export default function PerformancePage() {
               <div className="text-3xl font-bold text-orange-600 mb-2">
                 +{data?.yearOverYear.ratings}%
               </div>
-              <p className="text-sm text-muted-foreground">Rating Improvement</p>
+              <p className="text-sm text-muted-foreground">
+                Rating Improvement
+              </p>
               <p className="text-xs text-muted-foreground">vs. last year</p>
             </div>
           </div>

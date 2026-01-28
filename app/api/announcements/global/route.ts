@@ -51,3 +51,25 @@ export async function POST(req: Request) {
     return new NextResponse("Internal Error", { status: 500 });
   }
 }
+
+// Delete/deactivate all global announcements (admin only)
+export async function DELETE(req: Request) {
+  try {
+    const user = await currentUser();
+
+    if (!user || !user.id || user.role !== UserRole.ADMIN) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    // Deactivate all announcements instead of deleting
+    await db.globalAnnouncement.updateMany({
+      where: { isActive: true },
+      data: { isActive: false },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.log("[GLOBAL_ANNOUNCEMENT_DELETE]", error);
+    return new NextResponse("Internal Error", { status: 500 });
+  }
+}

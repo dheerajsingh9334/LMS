@@ -5,7 +5,7 @@ import { IconBadge } from "@/components/icon-badge";
 import {
   BookOpen,
   Users,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   Video,
   Award,
@@ -66,23 +66,23 @@ const TeacherDashboardPage = async () => {
   // Calculate stats
   const totalCourses = courses.length;
   const publishedCourses = courses.filter(
-    (course) => course.isPublished
+    (course) => course.isPublished,
   ).length;
   const totalStudents = courses.reduce(
     (total, course) =>
       total +
       course.purchases.filter((p) => p.paymentStatus === "completed").length,
-    0
+    0,
   );
   const totalRevenue = courses.reduce((total, course) => {
     const completedPurchases = course.purchases.filter(
-      (p) => p.paymentStatus === "completed"
+      (p) => p.paymentStatus === "completed",
     ).length;
     return total + completedPurchases * (course.price || 0);
   }, 0);
   const activeLiveSessions = courses.reduce(
     (total, course) => total + course.liveSessions.length,
-    0
+    0,
   );
 
   const publishedCount = courses.filter((c) => c.isPublished).length;
@@ -151,7 +151,7 @@ const TeacherDashboardPage = async () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <IconBadge icon={DollarSign} />
+            <IconBadge icon={IndianRupee} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

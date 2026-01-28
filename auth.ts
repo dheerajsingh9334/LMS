@@ -16,6 +16,21 @@ export const {
   unstable_update,
 } = NextAuth({
   trustHost: true,
+  pages: {
+    signIn: "/auth/login",
+    error: "/auth/error",
+  },
+  cookies: {
+    sessionToken: {
+      name: `${process.env.NODE_ENV === "production" ? "__Secure-" : ""}authjs.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
   events: {
     async linkAccount({ user }) {
       await db.user.update({

@@ -130,17 +130,22 @@ const getTeacherCourseRoutes = (courseId: string) => [
   {
     icon: ListChecks,
     label: "Chapters",
-    href: `/teacher/courses/${courseId}#chapters`,
+    href: `/teacher/courses/${courseId}/chapters`,
   },
   {
     icon: FileQuestion,
     label: "Quizzes",
-    href: `/teacher/courses/${courseId}#quizzes`,
+    href: `/teacher/courses/${courseId}/quizzes`,
   },
   {
     icon: ClipboardList,
     label: "Assignments",
     href: `/teacher/courses/${courseId}/assignments`,
+  },
+  {
+    icon: Award,
+    label: "Final Exams",
+    href: `/teacher/courses/${courseId}/final-exams`,
   },
   {
     icon: Award,
@@ -150,12 +155,12 @@ const getTeacherCourseRoutes = (courseId: string) => [
   {
     icon: Video,
     label: "Live Sessions",
-    href: `/teacher/courses/${courseId}#live`,
+    href: `/teacher/courses/${courseId}/live-sessions`,
   },
   {
     icon: FileText,
     label: "Resources",
-    href: `/teacher/courses/${courseId}#resources`,
+    href: `/teacher/courses/${courseId}/resources`,
   },
   {
     icon: Users,
@@ -164,7 +169,7 @@ const getTeacherCourseRoutes = (courseId: string) => [
   },
   {
     icon: BarChart,
-    label: "Course Analytics",
+    label: "Analytics",
     href: `/teacher/courses/${courseId}/analytics`,
   },
 ];
@@ -280,7 +285,7 @@ export const SidebarRoutes = () => {
             label={route.label}
             href={route.href}
           />
-        )
+        ),
       )}
     </div>
   );

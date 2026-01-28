@@ -25,24 +25,41 @@ export const CertificateTemplateForm = ({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [templateUrl, setTemplateUrl] = useState(
-    initialData?.templateUrl || ""
+    initialData?.templateUrl || "",
   );
   const [autoIssue, setAutoIssue] = useState(initialData?.autoIssue ?? true);
   const [autoDownload, setAutoDownload] = useState(
-    initialData?.autoDownload ?? false
+    initialData?.autoDownload ?? false,
   );
   const isPdfTemplate = templateUrl.toLowerCase().endsWith(".pdf");
 
   // Position and styling
   const [namePositionX, setNamePositionX] = useState(
-    initialData?.namePositionX || 400
+    initialData?.namePositionX || 400,
   );
   const [namePositionY, setNamePositionY] = useState(
-    initialData?.namePositionY || 300
+    initialData?.namePositionY || 300,
   );
   const [fontSize, setFontSize] = useState(initialData?.fontSize || 24);
   const [fontColor, setFontColor] = useState(
-    initialData?.fontColor || "#000000"
+    initialData?.fontColor || "#000000",
+  );
+
+  // Editable text fields
+  const [certificateTitle, setCertificateTitle] = useState(
+    initialData?.certificateTitle || "Certificate of Completion",
+  );
+  const [signatureName, setSignatureName] = useState(
+    initialData?.signatureName || "",
+  );
+  const [signatureTitle, setSignatureTitle] = useState(
+    initialData?.signatureTitle || "Course Instructor",
+  );
+  const [organizationName, setOrganizationName] = useState(
+    initialData?.organizationName || "",
+  );
+  const [additionalText, setAdditionalText] = useState(
+    initialData?.additionalText || "",
   );
 
   const onSubmit = async () => {
@@ -57,6 +74,12 @@ export const CertificateTemplateForm = ({
         namePositionY,
         fontSize,
         fontColor,
+        // Editable text fields
+        certificateTitle,
+        signatureName: signatureName || null,
+        signatureTitle,
+        organizationName: organizationName || null,
+        additionalText: additionalText || null,
         // Optional extras to align with API schema
         fontFamily: "Arial",
         minPercentage: 70,
@@ -70,7 +93,7 @@ export const CertificateTemplateForm = ({
       if (initialData) {
         await axios.patch(
           `/api/courses/${courseId}/certificate/template`,
-          data
+          data,
         );
         toast.success("Certificate template updated");
       } else {
@@ -164,6 +187,100 @@ export const CertificateTemplateForm = ({
             )}
           </div>
         )}
+      </div>
+
+      <Separator />
+
+      {/* Editable Certificate Text */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-medium">Certificate Text (Editable)</h3>
+          <p className="text-sm text-muted-foreground">
+            Customize the text that appears on the certificate
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="certificateTitle">Certificate Title</Label>
+            <Input
+              id="certificateTitle"
+              type="text"
+              placeholder="Certificate of Completion"
+              value={certificateTitle}
+              onChange={(e) => setCertificateTitle(e.target.value)}
+              disabled={isLoading}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Main title of the certificate (e.g., "Certificate of Completion",
+              "Certificate of Achievement")
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="signatureName">Signature Name</Label>
+            <Input
+              id="signatureName"
+              type="text"
+              placeholder="prof. sahir Suma"
+              value={signatureName}
+              onChange={(e) => setSignatureName(e.target.value)}
+              disabled={isLoading}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Name that appears above the signature line (defaults to instructor
+              name if left empty)
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="signatureTitle">Signature Title</Label>
+            <Input
+              id="signatureTitle"
+              type="text"
+              placeholder="Course Instructor"
+              value={signatureTitle}
+              onChange={(e) => setSignatureTitle(e.target.value)}
+              disabled={isLoading}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Title/designation below the signature (e.g., "Course Instructor",
+              "Professor", "Lead Educator")
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="organizationName">
+              Organization Name (Optional)
+            </Label>
+            <Input
+              id="organizationName"
+              type="text"
+              placeholder="Marwadi University"
+              value={organizationName}
+              onChange={(e) => setOrganizationName(e.target.value)}
+              disabled={isLoading}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Name of your organization or institution
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="additionalText">Additional Text (Optional)</Label>
+            <Input
+              id="additionalText"
+              type="text"
+              placeholder="Has successfully completed the course"
+              value={additionalText}
+              onChange={(e) => setAdditionalText(e.target.value)}
+              disabled={isLoading}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Any additional custom text to include on the certificate
+            </p>
+          </div>
+        </div>
       </div>
 
       <Separator />

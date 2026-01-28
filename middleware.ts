@@ -17,7 +17,7 @@ export default auth((req) => {
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
   const isAuthRoute = authRoutes.some((route) =>
-    nextUrl.pathname.startsWith(route)
+    nextUrl.pathname.startsWith(route),
   );
 
   if (isApiAuthRoute) {
@@ -40,7 +40,7 @@ export default auth((req) => {
     const encodedCallbackUrl = encodeURIComponent(callbackUrl);
 
     return Response.redirect(
-      new URL(`/auth?callbackUrl=${encodedCallbackUrl}`, nextUrl)
+      new URL(`/auth?callbackUrl=${encodedCallbackUrl}`, nextUrl),
     );
   }
 
@@ -56,7 +56,10 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public files (png, jpg, jpeg, gif, svg, webp, ico)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!.+\\.[\\w]+$|_next).*)",
+    "/",
+    "/(api|trpc)(.*)",
   ],
 };

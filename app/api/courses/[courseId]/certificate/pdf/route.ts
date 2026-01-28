@@ -55,14 +55,15 @@ export async function GET(
       studentName: certificate.studentName || "Student",
       courseTitle: certificate.course?.title || "Course",
       teacherName:
+        template?.signatureName ||
         certificate.course?.user?.name ||
-        template?.organizationName ||
         "Instructor",
       minPercentage,
       scorePercent,
       issueDate,
       verificationCode: certificate.verificationCode || undefined,
-      signatureTitle: "Course Instructor",
+      signatureTitle: template?.signatureTitle || "Course Instructor",
+      organizationNameUnderSignature: template?.organizationName || undefined,
     });
 
     // Save locally and update certificateUrl (optional convenience)

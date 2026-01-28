@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import { Loader2, RefreshCcw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface StudentCertificatePreviewProps {
@@ -26,7 +24,11 @@ export const StudentCertificatePreview = ({
       // Always use the local pdf-lib rendering for preview so
       // the certificate includes dynamic student + course details
       // regardless of external generators.
-      setPreviewUrl(`/api/courses/${courseId}/certificate/pdf?useLocal=1`);
+      // Add timestamp to bust cache and show latest template changes
+      const timestamp = new Date().getTime();
+      setPreviewUrl(
+        `/api/courses/${courseId}/certificate/pdf?useLocal=1&t=${timestamp}`,
+      );
     } catch (err: any) {
       toast.error(String(err?.message || "Failed to load preview"));
     } finally {
@@ -45,22 +47,6 @@ export const StudentCertificatePreview = ({
 
   return (
     <div className={className}>
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-sm text-muted-foreground">Certificate Preview</p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={loadPreview}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <RefreshCcw className="h-4 w-4 mr-2" />
-          )}
-          {isLoading ? "Loading" : "Refresh"}
-        </Button>
-      </div>
       <div
         className="relative w-full border rounded-lg overflow-hidden bg-white"
         style={{ minHeight: 360 }}

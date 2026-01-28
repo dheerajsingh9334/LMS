@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AdminGlobalAnnouncementForm } from "./_components/admin-global-announcement-form";
+import { AdminDashboardCharts } from "./_components/admin-dashboard-charts";
 import DoughnutChart from "@/app/(dashboard)/_components/doughnutChart";
 import BarChart from "@/app/(dashboard)/_components/barChart";
 import LineChart from "@/app/(dashboard)/_components/lineChart";
@@ -22,7 +23,6 @@ import {
   GraduationCap,
   UserCheck,
   TrendingUp,
-  DollarSign,
 } from "lucide-react";
 
 const AdminPage = async () => {
@@ -44,6 +44,10 @@ const AdminPage = async () => {
     recentUsers,
     recentCourses,
     purchases,
+    categories,
+    coursesWithCategory,
+    coursesRevenue,
+    teachersRevenue,
   ] = await Promise.all([
     db.user.count(),
     db.course.count(),
@@ -80,6 +84,74 @@ const AdminPage = async () => {
       },
       orderBy: {
         createdAt: "asc",
+      },
+    }),
+    db.category.findMany({
+      select: {
+        id: true,
+        name: true,
+        courses: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    }),
+    db.course.findMany({
+      where: {
+        isPublished: true,
+      },
+      select: {
+        id: true,
+        categoryId: true,
+        purchases: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    }),
+    // Revenue by course
+    db.course.findMany({
+      where: {
+        isPublished: true,
+      },
+      select: {
+        id: true,
+        title: true,
+        purchases: {
+          where: {
+            paymentStatus: "completed",
+          },
+          select: {
+            amount: true,
+          },
+        },
+      },
+    }),
+    // Revenue by teacher
+    db.user.findMany({
+      where: {
+        userType: UserType.TEACHER,
+      },
+      select: {
+        id: true,
+        name: true,
+        courses: {
+          where: {
+            isPublished: true,
+          },
+          select: {
+            purchases: {
+              where: {
+                paymentStatus: "completed",
+              },
+              select: {
+                amount: true,
+              },
+            },
+          },
+        },
       },
     }),
   ]);
@@ -130,6 +202,74 @@ const AdminPage = async () => {
     cumulativeRevenue.push(next);
     return next;
   }, 0);
+
+  // Process category data for pie chart
+  const categoryMap = new Map<string, number>();
+  categories.forEach((cat) => {
+    categoryMap.set(cat.name, cat.courses.length);
+  });
+  const categoryLabels = Array.from(categoryMap.keys());
+  const categoryData = Array.from(categoryMap.values());
+
+  // Process student enrollment by category for pie chart
+  const studentEnrollmentByCategory = new Map<string, Set<string>>();
+  coursesWithCategory.forEach((course) => {
+    const category = categories.find((c) => c.id === course.categoryId);
+    if (category) {
+      const enrollmentSet =
+        studentEnrollmentByCategory.get(category.name) || new Set<string>();
+      course.purchases.forEach((purchase) => {
+        enrollmentSet.add(purchase.userId);
+      });
+      studentEnrollmentByCategory.set(category.name, enrollmentSet);
+    }
+  });
+
+  const studentCategoryLabels = Array.from(studentEnrollmentByCategory.keys());
+  const studentCategoryData = Array.from(
+    studentEnrollmentByCategory.values(),
+  ).map((set) => set.size);
+
+  // Process revenue by course
+  const courseRevenueData = coursesRevenue
+    .map((course) => {
+      const totalRevenue = course.purchases.reduce(
+        (sum, purchase) => sum + (purchase.amount || 0),
+        0,
+      );
+      return {
+        courseName: course.title,
+        revenue: totalRevenue,
+      };
+    })
+    .filter((c) => c.revenue > 0)
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 10); // Top 10 courses
+
+  const courseRevenueLabels = courseRevenueData.map((c) => c.courseName);
+  const courseRevenueValues = courseRevenueData.map((c) => c.revenue);
+
+  // Process revenue by teacher
+  const teacherRevenueData = teachersRevenue
+    .map((teacher) => {
+      const totalRevenue = teacher.courses.reduce((sum, course) => {
+        const courseRevenue = course.purchases.reduce(
+          (pSum, purchase) => pSum + (purchase.amount || 0),
+          0,
+        );
+        return sum + courseRevenue;
+      }, 0);
+      return {
+        teacherName: teacher.name || "Unknown",
+        revenue: totalRevenue,
+      };
+    })
+    .filter((t) => t.revenue > 0)
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 10); // Top 10 teachers
+
+  const teacherRevenueLabels = teacherRevenueData.map((t) => t.teacherName);
+  const teacherRevenueValues = teacherRevenueData.map((t) => t.revenue);
 
   return (
     <div className="p-6 space-y-6">
@@ -229,6 +369,35 @@ const AdminPage = async () => {
             data={cumulativeRevenue}
             isCurrency
           />
+        </div>
+      )}
+
+      {/* Pie Charts for Categories and Students with Filters */}
+      <AdminDashboardCharts
+        categoryLabels={categoryLabels}
+        categoryData={categoryData}
+        studentCategoryLabels={studentCategoryLabels}
+        studentCategoryData={studentCategoryData}
+      />
+
+      {/* Revenue by Course and Teacher */}
+      {courseRevenueLabels.length > 0 && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <BarChart
+            title="Top 10 Courses by Revenue (₹)"
+            labels={courseRevenueLabels}
+            data={courseRevenueValues}
+            isCurrency
+          />
+
+          {teacherRevenueLabels.length > 0 && (
+            <BarChart
+              title="Top 10 Teachers by Revenue (₹)"
+              labels={teacherRevenueLabels}
+              data={teacherRevenueValues}
+              isCurrency
+            />
+          )}
         </div>
       )}
 

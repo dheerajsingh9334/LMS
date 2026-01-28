@@ -12,7 +12,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import {
   Users,
-  DollarSign,
+  IndianRupee,
   Star,
   TrendingUp,
   Library,
@@ -124,7 +124,7 @@ export function AnalyticsDashboard() {
             <CardTitle className="text-sm font-medium">
               Total Earnings
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <IndianRupee className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
@@ -241,7 +241,7 @@ export function AnalyticsDashboard() {
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
+              <IndianRupee className="h-5 w-5" />
               Earnings Over Time
             </CardTitle>
             <CardDescription>
@@ -387,7 +387,7 @@ export function AnalyticsDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
+              <IndianRupee className="h-5 w-5" />
               Earnings by Top Courses
             </CardTitle>
           </CardHeader>

@@ -4,10 +4,18 @@ import { UserRole } from "@prisma/client";
 export const SettingsSchema = z
   .object({
     name: z.optional(z.string()),
-    role: z.enum([UserRole.ADMIN, UserRole.USER, UserRole.TEACHER]),
+    role: z.optional(z.enum([UserRole.ADMIN, UserRole.USER, UserRole.TEACHER])),
     email: z.optional(z.string().email()),
-    password: z.optional(z.string().min(6)),
-    newPassword: z.optional(z.string().min(6)),
+    password: z.optional(
+      z.string().min(6, {
+        message: "Password must be at least 6 characters",
+      }),
+    ),
+    newPassword: z.optional(
+      z.string().min(6, {
+        message: "New password must be at least 6 characters",
+      }),
+    ),
   })
   .refine(
     (data) => {
@@ -20,7 +28,7 @@ export const SettingsSchema = z
     {
       message: "New password is required!",
       path: ["newPassword"],
-    }
+    },
   )
   .refine(
     (data) => {
@@ -31,9 +39,26 @@ export const SettingsSchema = z
       return true;
     },
     {
-      message: "Password is required!",
+      message: "Current password is required!",
       path: ["password"],
-    }
+    },
+  )
+  .refine(
+    (data) => {
+      if (
+        data.password &&
+        data.newPassword &&
+        data.password === data.newPassword
+      ) {
+        return false;
+      }
+
+      return true;
+    },
+    {
+      message: "New password must be different from current password!",
+      path: ["newPassword"],
+    },
   );
 
 export const NewPasswordSchema = z.object({

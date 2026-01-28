@@ -23,7 +23,7 @@ import {
   BarChart2,
   Users,
   BookOpen,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
 } from "lucide-react";
 import { RoleProtectedPage } from "@/components/auth/role-protected-page";
@@ -294,7 +294,7 @@ const AdminAnalyticsPageInner = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <IndianRupee className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -427,7 +427,7 @@ const AdminAnalyticsPageInner = () => {
                     </td>
                     <td className="py-2 text-right">{course.enrollments}</td>
                     <td className="py-2 text-right">
-                      $ {course.revenue.toFixed(2)}
+                      ₹ {course.revenue.toFixed(2)}
                     </td>
                   </tr>
                 ))}
@@ -478,7 +478,7 @@ const AdminAnalyticsPageInner = () => {
                     </td>
                     <td className="py-2 text-right">{teacher.enrollments}</td>
                     <td className="py-2 text-right">
-                      $ {teacher.revenue.toFixed(2)}
+                      ₹ {teacher.revenue.toFixed(2)}
                     </td>
                   </tr>
                 ))}

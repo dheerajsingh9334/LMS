@@ -44,7 +44,7 @@ export const CertificateDisplay = ({
   const downloadCertificate = () => {
     // Create a canvas element to draw the certificate (matching PDF style)
     const canvas = document.createElement("canvas");
-    const width = 1200;  // Landscape A4 ratio
+    const width = 1200; // Landscape A4 ratio
     const height = 850;
     canvas.width = width;
     canvas.height = height;
@@ -135,7 +135,12 @@ export const CertificateDisplay = ({
       ctx.fillText(orgName, width / 2, logoY - 15);
 
       // Function to wrap text
-      const wrapText = (text: string, maxWidth: number, fontSize: number, fontWeight = "bold") => {
+      const wrapText = (
+        text: string,
+        maxWidth: number,
+        fontSize: number,
+        fontWeight = "bold",
+      ) => {
         ctx.font = `${fontWeight} ${fontSize}px Arial`;
         const words = text.split(" ");
         const lines: string[] = [];
@@ -144,7 +149,10 @@ export const CertificateDisplay = ({
         for (let word of words) {
           let metrics = ctx.measureText(word);
           if (metrics.width > maxWidth) {
-            while (ctx.measureText(word + "...").width > maxWidth - 20 && word.length > 8) {
+            while (
+              ctx.measureText(word + "...").width > maxWidth - 20 &&
+              word.length > 8
+            ) {
               word = word.substring(0, word.length - 1);
             }
             word = word + "...";
@@ -207,7 +215,11 @@ export const CertificateDisplay = ({
       // "has successfully completed the course" (italic gray)
       ctx.font = "italic 18px Arial";
       ctx.fillStyle = "#666666";
-      ctx.fillText("has successfully completed the course", width / 2, nameY - 45);
+      ctx.fillText(
+        "has successfully completed the course",
+        width / 2,
+        nameY - 45,
+      );
 
       // Course title (blue, wrapped)
       ctx.fillStyle = "#264d80";
@@ -226,11 +238,14 @@ export const CertificateDisplay = ({
       ctx.fillText(scoreText, width / 2, courseY - 25);
 
       // Date of completion
-      const dateFormatted = new Date(certificate.issueDate).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
+      const dateFormatted = new Date(certificate.issueDate).toLocaleDateString(
+        "en-US",
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        },
+      );
       ctx.font = "15px Arial";
       ctx.fillStyle = "#666666";
       ctx.fillText(`Date of Completion: `, width / 2 - 70, courseY - 55);
@@ -240,7 +255,7 @@ export const CertificateDisplay = ({
 
       // Signature section
       const sigY = 135;
-      
+
       // Signature line
       ctx.strokeStyle = "#4d4d4d";
       ctx.lineWidth = 1.5;
@@ -258,7 +273,11 @@ export const CertificateDisplay = ({
       if (certificate.verificationCode) {
         ctx.font = "11px Arial";
         ctx.fillStyle = "#808080";
-        ctx.fillText(`Verification: ${certificate.verificationCode}`, width / 2, 70);
+        ctx.fillText(
+          `Verification: ${certificate.verificationCode}`,
+          width / 2,
+          70,
+        );
       }
     };
 
@@ -364,7 +383,7 @@ export const CertificateDisplay = ({
               <div className="absolute top-3 right-3 w-8 h-8 border-t-2 border-r-2 border-[#998033]"></div>
               <div className="absolute bottom-3 left-3 w-8 h-8 border-b-2 border-l-2 border-[#998033]"></div>
               <div className="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 border-[#998033]"></div>
-              
+
               <div className="text-center space-y-4">
                 {/* Logo */}
                 <div className="flex justify-center mb-2">
@@ -378,27 +397,27 @@ export const CertificateDisplay = ({
                     />
                   </div>
                 </div>
-                
+
                 {/* Organization name */}
                 <p className="text-sm font-bold text-[#262640] tracking-wide">
                   Marwadi University
                 </p>
-                
+
                 {/* Certificate title */}
                 <h2 className="text-2xl font-bold text-[#264d80] tracking-widest">
                   CERTIFICATE OF COMPLETION
                 </h2>
-                
+
                 {/* Decorative line */}
                 <div className="flex justify-center">
                   <div className="w-48 h-0.5 bg-[#998033]"></div>
                 </div>
-                
+
                 {/* Certify text */}
                 <p className="text-gray-500 italic text-sm">
                   This is to certify that
                 </p>
-                
+
                 {/* Student name */}
                 <div className="py-2">
                   <h3 className="text-2xl font-bold text-gray-900">
@@ -408,40 +427,45 @@ export const CertificateDisplay = ({
                     <div className="w-40 h-px bg-gray-400"></div>
                   </div>
                 </div>
-                
+
                 {/* Completed text */}
                 <p className="text-gray-500 italic text-sm">
                   has successfully completed the course
                 </p>
-                
+
                 {/* Course title */}
                 <h4 className="text-xl font-bold text-[#264d80] px-8">
                   {courseTitle}
                 </h4>
-                
+
                 {/* Score */}
                 <p className="text-green-600 font-medium text-sm">
                   Score: {certificate.percentage.toFixed(2)}%
                 </p>
-                
+
                 {/* Date */}
                 <p className="text-gray-500 text-sm">
                   Date of Completion:{" "}
                   <span className="font-medium text-gray-700">
-                    {new Date(certificate.issueDate).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {new Date(certificate.issueDate).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      },
+                    )}
                   </span>
                 </p>
-                
+
                 {/* Signature section */}
                 <div className="pt-4">
                   <div className="flex justify-center">
                     <div className="w-32 h-px bg-gray-400"></div>
                   </div>
-                  <p className="text-gray-500 text-xs mt-1">Course Instructor</p>
+                  <p className="text-gray-500 text-xs mt-1">
+                    Course Instructor
+                  </p>
                 </div>
               </div>
             </div>

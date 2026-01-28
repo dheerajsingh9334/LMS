@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPrice } from "@/lib/format";
-import { DollarSign, ShoppingCart, TrendingUp, BookOpen } from "lucide-react";
+import { IndianRupee, ShoppingCart, TrendingUp, BookOpen } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -78,7 +78,7 @@ export const TeacherAnalytics = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <IndianRupee className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

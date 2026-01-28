@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import Image from "next/image";
+import { StudentCertificatePreview } from "@/components/student-certificate-preview";
 
 const MyCertificatesPage = async () => {
   const session = await auth();
@@ -87,36 +88,12 @@ const MyCertificatesPage = async () => {
               </CardHeader>
 
               <CardContent className="p-4 space-y-4">
-                {/* Certificate Preview */}
-                {certificate.certificateUrl && (
-                  <div className="relative aspect-[4/3] w-full rounded-lg overflow-hidden border-2 border-yellow-200 dark:border-yellow-800 bg-white flex items-center justify-center">
-                    {certificate.certificateUrl
-                      .toLowerCase()
-                      .endsWith(".pdf") ? (
-                      <div className="flex flex-col items-center justify-center p-4 text-center space-y-2">
-                        <Award className="h-10 w-10 text-yellow-600" />
-                        <p className="text-sm font-medium">PDF certificate</p>
-                        <Button asChild size="sm" variant="outline">
-                          <a
-                            href={certificate.certificateUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Open PDF
-                          </a>
-                        </Button>
-                      </div>
-                    ) : (
-                      <Image
-                        src={certificate.certificateUrl}
-                        alt={`Certificate for ${certificate.course.title}`}
-                        fill
-                        className="object-contain bg-white"
-                      />
-                    )}
-                  </div>
-                )}
+                {/* Certificate Preview - Dynamic */}
+                <StudentCertificatePreview
+                  courseId={certificate.courseId}
+                  certificateUrl={certificate.certificateUrl}
+                  className=""
+                />
 
                 {/* Details */}
                 <div className="space-y-2 text-sm">
@@ -182,7 +159,7 @@ const MyCertificatesPage = async () => {
                     href={`/api/courses/${certificate.courseId}/certificate/pdf`}
                     download={`${certificate.course.title.replace(
                       /\s+/g,
-                      "_"
+                      "_",
                     )}_Certificate.pdf`}
                   >
                     <Download className="h-4 w-4 mr-2" />

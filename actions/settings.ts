@@ -46,23 +46,20 @@ export const settings = async (values: z.infer<typeof SettingsSchema>) => {
     return { success: "Verification email sent!" };
   }
 
-  // if (values.password && values.newPassword && dbUser.password) {
-  //   const passwordsMatch = await bcrypt.compare(
-  //     values.password,
-  //     dbUser.password,
-  //   );
+  if (values.password && values.newPassword && dbUser.password) {
+    const passwordsMatch = await bcrypt.compare(
+      values.password,
+      dbUser.password,
+    );
 
-  //   if (!passwordsMatch) {
-  //     return { error: "Incorrect password!" };
-  //   }
+    if (!passwordsMatch) {
+      return { error: "Current password is incorrect!" };
+    }
 
-  //   const hashedPassword = await bcrypt.hash(
-  //     values.newPassword,
-  //     10,
-  //   );
-  //   values.password = hashedPassword;
-  //   values.newPassword = undefined;
-  // }
+    const hashedPassword = await bcrypt.hash(values.newPassword, 10);
+    values.password = hashedPassword;
+    values.newPassword = undefined;
+  }
 
   const updatedUser = await db.user.update({
     where: { id: dbUser.id },

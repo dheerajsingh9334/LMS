@@ -106,7 +106,7 @@ export async function GET(
         courseNameOverride || resolvedCourseTitle,
       );
       const finalTeacherName = String(
-        teacherNameOverride || resolvedTeacherName,
+        teacherNameOverride || template?.signatureName || resolvedTeacherName,
       );
       const finalCompletionDateIso = String(
         completionDateOverride || completionDateIso,
@@ -119,10 +119,12 @@ export async function GET(
         day: "numeric",
       });
       const finalSignatureName = String(
-        signatureNameOverride || finalTeacherName,
+        signatureNameOverride || template?.signatureName || finalTeacherName,
       );
       const finalSignatureTitle = String(
-        signatureTitleOverride || "Course Instructor",
+        signatureTitleOverride ||
+          template?.signatureTitle ||
+          "Course Instructor",
       );
 
       // Requirements from template (use defaults if no template)
@@ -149,7 +151,9 @@ export async function GET(
         teacherName: finalTeacherName,
         // Optional top title
         certificateTitle:
-          certificateTitleOverride || "Certificate of Completion",
+          certificateTitleOverride ||
+          template?.certificateTitle ||
+          "Certificate of Completion",
         // Dates
         completionDate: finalCompletionDateIso,
         completionDateText: finalCompletionDateText,
@@ -157,7 +161,8 @@ export async function GET(
         // Signature block
         signatureName: finalSignatureName,
         signatureTitle: finalSignatureTitle,
-        organizationName: organizationNameOverride,
+        organizationName:
+          organizationNameOverride || template?.organizationName || "",
         // Requirements (auto)
         requirementMinPercentage,
         requirementAllChapters,
