@@ -152,7 +152,7 @@ export const CertificateManager = ({
       setAutoFetchError(null);
 
       const res = await axios.get(
-        `/api/courses/${courseId}/certificate/fields`
+        `/api/courses/${courseId}/certificate/fields`,
       );
       const data = res.data;
 
@@ -262,7 +262,7 @@ export const CertificateManager = ({
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
 
       toast.success("Certificate template uploaded successfully!");
@@ -291,7 +291,7 @@ export const CertificateManager = ({
 
       const res = await axios.get(
         `/api/courses/${courseId}/certificate/sample?${params.toString()}`,
-        { responseType: "arraybuffer" }
+        { responseType: "arraybuffer" },
       );
       const blob = new Blob([res.data], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
@@ -320,7 +320,7 @@ export const CertificateManager = ({
 
       const res = await axios.get(
         `/api/courses/${courseId}/certificate/sample?${params.toString()}`,
-        { responseType: "arraybuffer" }
+        { responseType: "arraybuffer" },
       );
       const blob = new Blob([res.data], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
@@ -890,15 +890,11 @@ export const CertificateManager = ({
             </DialogHeader>
             <div className="w-full h-[70vh]">
               {previewUrl ? (
-                <object
-                  data={previewUrl}
-                  type="application/pdf"
-                  className="w-full h-full"
-                >
-                  <p className="text-sm text-muted-foreground">
-                    PDF preview not supported. Download the sample instead.
-                  </p>
-                </object>
+                <iframe
+                  src={previewUrl}
+                  title="Certificate Preview"
+                  className="w-full h-full border-0"
+                />
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-8 h-8 animate-spin" />
