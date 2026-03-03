@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { eventBus, EventName } from "@/lib/events";
+import "@/lib/events/init";
 
 // POST create a reply
 export async function POST(
@@ -32,6 +34,28 @@ export async function POST(
         content,
       },
     });
+
+    // Emit discussion reply event
+    const discussion = await db.discussion.findUnique({
+      where: { id: params.discussionId },
+      select: { userId: true, title: true },
+    });
+    const course = await db.course.findUnique({
+      where: { id: params.courseId },
+      select: { title: true },
+    });
+    if (discussion && discussion.userId !== userId) {
+      eventBus.emit(EventName.DISCUSSION_REPLY, {
+        discussionId: params.discussionId,
+        courseId: params.courseId,
+        courseTitle: course?.title || "Course",
+        replyContent: content,
+        replierName: userName,
+        originalAuthorId: discussion.userId,
+        timestamp: new Date(),
+        triggeredBy: userId,
+      });
+    }
 
     return NextResponse.json(reply);
   } catch (error) {

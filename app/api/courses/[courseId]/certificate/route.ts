@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { eventBus, EventName } from "@/lib/events";
+import "@/lib/events/init";
 
 export async function POST(
   req: Request,
@@ -125,16 +127,28 @@ export async function POST(
         studentName: user.name || "Student",
         studentEmail: user.email || "",
         totalChapters: course.chapters.length,
-        completedChapters: course.chapters.length, // Assume all completed if creating certificate
+        completedChapters: course.chapters.length,
         totalQuizzes,
         completedQuizzes,
-        totalAssignments: 0, // Default to 0 for now
-        completedAssignments: 0, // Default to 0 for now
+        totalAssignments: 0,
+        completedAssignments: 0,
         totalScore,
         achievedScore,
-        percentage: Math.round(percentage * 100) / 100, // Round to 2 decimal places
+        percentage: Math.round(percentage * 100) / 100,
         verificationCode: `CERT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
       },
+    });
+
+    // Emit certificate issued event
+    eventBus.emit(EventName.CERTIFICATE_ISSUED, {
+      certificateId: certificate.id,
+      courseId,
+      courseTitle: course.title || "Course",
+      studentId: user.id,
+      studentName: user.name || "Student",
+      percentage: Math.round(percentage * 100) / 100,
+      timestamp: new Date(),
+      triggeredBy: user.id,
     });
 
     return NextResponse.json(certificate);

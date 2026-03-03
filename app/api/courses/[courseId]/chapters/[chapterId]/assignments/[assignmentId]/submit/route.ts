@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { eventBus, EventName } from "@/lib/events";
+import "@/lib/events/init";
 
 export async function POST(
   req: Request,
@@ -143,6 +145,18 @@ export async function POST(
     // Create submission
     const submission = await db.assignmentSubmission.create({
       data: submissionData,
+    });
+
+    // Emit assignment submitted event
+    eventBus.emit(EventName.ASSIGNMENT_SUBMITTED, {
+      assignmentId: params.assignmentId,
+      assignmentTitle: assignment.title || "Assignment",
+      courseId: params.courseId,
+      studentId: user.id,
+      studentName: user.name || "Student",
+      teacherId: assignment.course.userId,
+      timestamp: new Date(),
+      triggeredBy: user.id,
     });
 
     return NextResponse.json(submission);

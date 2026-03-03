@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { checkPlagiarism } from "@/lib/plagiarism-check";
 import { NextResponse } from "next/server";
+import { eventBus, EventName } from "@/lib/events";
+import "@/lib/events/init";
 
 export async function POST(
   req: Request,
@@ -104,9 +106,24 @@ export async function POST(
         await checkPlagiarism(submission.id, values.textContent);
       } catch (error) {
         console.error("[PLAGIARISM_CHECK_ERROR]", error);
-        // Don't fail the submission if plagiarism check fails
       }
     }
+
+    // Emit assignment submitted event
+    const student = await db.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    eventBus.emit(EventName.ASSIGNMENT_SUBMITTED, {
+      assignmentId: params.assignmentId,
+      assignmentTitle: assignment.title || "Assignment",
+      courseId: params.courseId,
+      studentId: userId!,
+      studentName: student?.name || "Student",
+      teacherId: assignment.teacherId || assignment.course.userId,
+      timestamp: new Date(),
+      triggeredBy: userId!,
+    });
 
     return NextResponse.json(submission);
   } catch (error) {

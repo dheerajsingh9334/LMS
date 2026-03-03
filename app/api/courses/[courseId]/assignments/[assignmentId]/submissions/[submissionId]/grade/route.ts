@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { eventBus, EventName } from "@/lib/events";
+import "@/lib/events/init";
 
 export async function PATCH(
   req: Request,
@@ -61,6 +63,19 @@ export async function PATCH(
           },
         },
       },
+    });
+
+    // Emit assignment graded event
+    eventBus.emit(EventName.ASSIGNMENT_GRADED, {
+      assignmentId: params.assignmentId,
+      assignmentTitle: submission.assignment.title || "Assignment",
+      courseId: params.courseId,
+      studentId: submission.studentId,
+      grade: Math.round(finalScore),
+      maxGrade: submission.assignment.maxScore || 100,
+      feedback: values.feedback,
+      timestamp: new Date(),
+      triggeredBy: userId!,
     });
 
     return NextResponse.json(gradedSubmission);

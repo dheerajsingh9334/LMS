@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { eventBus, EventName } from "@/lib/events";
+import "@/lib/events/init";
 
 export async function PUT(
   req: Request,
@@ -122,6 +124,29 @@ export async function PUT(
               console.log(
                 `[AUTO_CERTIFICATE] Generated certificate for user ${userId} in course ${params.courseId}`
               );
+
+              // Emit course completed event
+              eventBus.emit(EventName.COURSE_COMPLETED, {
+                courseId: params.courseId,
+                courseTitle: course.title,
+                studentId: userId,
+                studentName: user?.name || "Student",
+                completionPercentage: 100,
+                timestamp: new Date(),
+                triggeredBy: userId,
+              });
+
+              // Emit certificate issued event
+              eventBus.emit(EventName.CERTIFICATE_ISSUED, {
+                certificateId: "auto",
+                courseId: params.courseId,
+                courseTitle: course.title,
+                studentId: userId,
+                studentName: user?.name || "Student",
+                percentage: 100,
+                timestamp: new Date(),
+                triggeredBy: userId,
+              });
             }
           }
         }

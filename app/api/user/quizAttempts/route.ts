@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { eventBus, EventName } from "@/lib/events";
+import "@/lib/events/init";
 
 interface QuizAttemptData {
   quizId: string;
@@ -27,6 +29,21 @@ export async function POST(req: Request) {
         score: score,
         answers: answers,
       },
+    });
+
+    // Emit quiz completed event
+    const quiz = await db.quiz.findUnique({
+      where: { id: quizId },
+      select: { title: true, questions: { select: { id: true } } },
+    });
+    eventBus.emit(EventName.QUIZ_COMPLETED, {
+      quizId,
+      quizTitle: quiz?.title || "Quiz",
+      studentId: userId,
+      score,
+      maxScore: quiz?.questions?.length || 0,
+      timestamp: new Date(),
+      triggeredBy: userId,
     });
 
     return NextResponse.json({ message: "Quiz attempt recorded successfully" });

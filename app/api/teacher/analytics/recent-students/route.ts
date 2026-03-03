@@ -13,10 +13,28 @@ export async function GET(req: NextRequest) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Fetch the last 5 purchases made by the user
+    // Get teacher's course IDs first
+    const teacherCourses = await db.course.findMany({
+      where: { userId: id },
+      select: { id: true },
+    });
+
+    const courseIds = teacherCourses.map((c) => c.id);
+
+    if (courseIds.length === 0) {
+      return NextResponse.json({ recentStudents: [] });
+    }
+
+    // Fetch the last 5 purchases for the teacher's courses
     const recentPurchases = await db.purchase.findMany({
+      where: {
+        courseId: { in: courseIds },
+        paymentStatus: "completed",
+      },
       include: {
-        course: true,
+        course: {
+          select: { title: true },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -24,27 +42,26 @@ export async function GET(req: NextRequest) {
       take: 5,
     });
 
-    // Extract user IDs from the purchases
-    const userIds = recentPurchases.map((purchase) => purchase.userId);
+    if (recentPurchases.length === 0) {
+      return NextResponse.json({ recentStudents: [] });
+    }
 
-    // Fetch user details for these user IDs
+    // Fetch user details for purchasers
+    const userIds = [...new Set(recentPurchases.map((p) => p.userId))];
     const users = await db.user.findMany({
-      where: {
-        id: { in: userIds },
-      },
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, image: true },
     });
 
-    // Create a map of user IDs to user details (including name and image)
     const userMap = new Map(
-      users.map((user) => [user.id, { name: user.name, image: user.image }]),
+      users.map((u) => [u.id, { name: u.name, image: u.image }]),
     );
 
-    // Transform data to match the required format, including user image
     const transformedStudents = recentPurchases.map((purchase) => ({
       name: userMap.get(purchase.userId)?.name || "Unknown",
-      courseTitle: purchase.course.title,
-      date: purchase.createdAt.toISOString().split("T")[0], // Format as YYYY-MM-DD
-      image: userMap.get(purchase.userId)?.image || "", // Use a default image if none exists
+      courseTitle: purchase.course?.title || "Unknown Course",
+      date: purchase.createdAt.toISOString().split("T")[0],
+      image: userMap.get(purchase.userId)?.image || "",
     }));
 
     return NextResponse.json({ recentStudents: transformedStudents });
