@@ -6,7 +6,7 @@ import "@/lib/events/init";
 
 export async function POST(
   req: Request,
-  { params }: { params: { courseId: string } }
+  { params }: { params: { courseId: string } },
 ) {
   try {
     const user = await currentUser();
@@ -49,7 +49,10 @@ export async function POST(
     }
 
     // Check if course is free or purchased
-    if (!course.isFree && (!purchase || purchase.paymentStatus !== "completed")) {
+    if (
+      !course.isFree &&
+      (!purchase || purchase.paymentStatus !== "completed")
+    ) {
       return new NextResponse("Course not purchased", { status: 403 });
     }
 
@@ -63,7 +66,9 @@ export async function POST(
     });
 
     if (totalQuizzes === 0) {
-      return new NextResponse("No quizzes available in this course", { status: 400 });
+      return new NextResponse("No quizzes available in this course", {
+        status: 400,
+      });
     }
 
     // Get all quiz attempts for this user in this course
@@ -89,7 +94,7 @@ export async function POST(
     if (completedQuizzes < totalQuizzes) {
       return new NextResponse(
         `Please complete all quizzes. Completed: ${completedQuizzes}/${totalQuizzes}`,
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -160,7 +165,7 @@ export async function POST(
 
 export async function GET(
   req: Request,
-  { params }: { params: { courseId: string } }
+  { params }: { params: { courseId: string } },
 ) {
   try {
     const user = await currentUser();

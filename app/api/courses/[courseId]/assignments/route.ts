@@ -6,7 +6,7 @@ import "@/lib/events/init";
 
 export async function POST(
   req: Request,
-  { params }: { params: { courseId: string } }
+  { params }: { params: { courseId: string } },
 ) {
   try {
     const session = await auth();
@@ -58,7 +58,7 @@ export async function POST(
 
 export async function GET(
   req: Request,
-  { params }: { params: { courseId: string } }
+  { params }: { params: { courseId: string } },
 ) {
   try {
     const session = await auth();

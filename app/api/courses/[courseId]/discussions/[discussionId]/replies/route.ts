@@ -7,7 +7,7 @@ import "@/lib/events/init";
 // POST create a reply
 export async function POST(
   req: Request,
-  { params }: { params: { courseId: string; discussionId: string } }
+  { params }: { params: { courseId: string; discussionId: string } },
 ) {
   try {
     const user = await currentUser();

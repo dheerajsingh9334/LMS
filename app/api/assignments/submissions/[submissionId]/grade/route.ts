@@ -6,7 +6,7 @@ import "@/lib/events/init";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { submissionId: string } }
+  { params }: { params: { submissionId: string } },
 ) {
   try {
     const user = await currentUser();
@@ -41,7 +41,10 @@ export async function PATCH(
     }
 
     // Check if user is the course owner/teacher
-    if (submission.assignment.course.userId !== user.id && submission.assignment.teacherId !== user.id) {
+    if (
+      submission.assignment.course.userId !== user.id &&
+      submission.assignment.teacherId !== user.id
+    ) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 

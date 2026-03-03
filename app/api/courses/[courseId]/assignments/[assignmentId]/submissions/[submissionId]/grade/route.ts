@@ -6,7 +6,11 @@ import "@/lib/events/init";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { courseId: string; assignmentId: string; submissionId: string } }
+  {
+    params,
+  }: {
+    params: { courseId: string; assignmentId: string; submissionId: string };
+  },
 ) {
   try {
     const session = await auth();
@@ -39,7 +43,10 @@ export async function PATCH(
     let finalScore = values.score;
     if (submission.isLate && submission.assignment.allowLateSubmission) {
       const penaltyAmount =
-        (values.score * submission.assignment.latePenalty * submission.daysLate) / 100;
+        (values.score *
+          submission.assignment.latePenalty *
+          submission.daysLate) /
+        100;
       finalScore = Math.max(0, values.score - penaltyAmount);
     }
 

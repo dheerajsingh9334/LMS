@@ -6,20 +6,18 @@ import "@/lib/events/init";
 
 export async function POST(
   req: Request,
-  { params }: { params: { courseId: string; chapterId: string; assignmentId: string } }
+  {
+    params,
+  }: { params: { courseId: string; chapterId: string; assignmentId: string } },
 ) {
   try {
     const user = await currentUser();
-    
+
     if (!user?.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const {
-      submissionId,
-      score,
-      feedback
-    } = await req.json();
+    const { submissionId, score, feedback } = await req.json();
 
     // Get assignment details
     const assignment = await db.assignment.findUnique({
@@ -41,12 +39,17 @@ export async function POST(
 
     // Check if user is the instructor
     if (assignment.course.userId !== user.id) {
-      return new NextResponse("Access denied - Only instructor can grade", { status: 403 });
+      return new NextResponse("Access denied - Only instructor can grade", {
+        status: 403,
+      });
     }
 
     // Validate score
     if (typeof score !== "number" || score < 0 || score > assignment.maxScore) {
-      return new NextResponse(`Score must be between 0 and ${assignment.maxScore}`, { status: 400 });
+      return new NextResponse(
+        `Score must be between 0 and ${assignment.maxScore}`,
+        { status: 400 },
+      );
     }
 
     // Get submission
@@ -61,7 +64,9 @@ export async function POST(
     }
 
     if (submission.assignmentId !== params.assignmentId) {
-      return new NextResponse("Submission does not belong to this assignment", { status: 400 });
+      return new NextResponse("Submission does not belong to this assignment", {
+        status: 400,
+      });
     }
 
     // Update submission with grade

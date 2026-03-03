@@ -7,7 +7,7 @@ import "@/lib/events/init";
 
 export async function POST(
   req: Request,
-  { params }: { params: { courseId: string; assignmentId: string } }
+  { params }: { params: { courseId: string; assignmentId: string } },
 ) {
   try {
     const session = await auth();
@@ -55,7 +55,10 @@ export async function POST(
     const now = new Date();
     const isLate = now > assignment.dueDate;
     const daysLate = isLate
-      ? Math.ceil((now.getTime() - assignment.dueDate.getTime()) / (1000 * 60 * 60 * 24))
+      ? Math.ceil(
+          (now.getTime() - assignment.dueDate.getTime()) /
+            (1000 * 60 * 60 * 24),
+        )
       : 0;
 
     if (isLate && !assignment.allowLateSubmission) {
@@ -101,7 +104,11 @@ export async function POST(
     });
 
     // Run plagiarism check if enabled and text submission
-    if (assignment.enablePlagiarismCheck && values.submissionType === "text" && values.textContent) {
+    if (
+      assignment.enablePlagiarismCheck &&
+      values.submissionType === "text" &&
+      values.textContent
+    ) {
       try {
         await checkPlagiarism(submission.id, values.textContent);
       } catch (error) {
@@ -134,7 +141,7 @@ export async function POST(
 
 export async function GET(
   req: Request,
-  { params }: { params: { courseId: string; assignmentId: string } }
+  { params }: { params: { courseId: string; assignmentId: string } },
 ) {
   try {
     const session = await auth();

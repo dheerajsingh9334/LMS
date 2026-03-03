@@ -7,7 +7,7 @@ import "@/lib/events/init";
 
 export async function PUT(
   req: Request,
-  { params }: { params: { courseId: string; chapterId: string } }
+  { params }: { params: { courseId: string; chapterId: string } },
 ) {
   try {
     const user = await currentUser();
@@ -122,7 +122,7 @@ export async function PUT(
               });
 
               console.log(
-                `[AUTO_CERTIFICATE] Generated certificate for user ${userId} in course ${params.courseId}`
+                `[AUTO_CERTIFICATE] Generated certificate for user ${userId} in course ${params.courseId}`,
               );
 
               // Emit course completed event
