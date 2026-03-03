@@ -34,7 +34,7 @@ import { AudienceForm } from "./_components/audience-form";
 import { FAQForm } from "./_components/faq-form";
 import { PromoVideoForm } from "./_components/promo-video-form";
 import { TestimonialsManagement } from "./_components/testimonials-management";
-import { CourseNavbar } from "@/components/course-navbar";
+import { CourseNavbar } from "@/components/courses/course-navbar";
 import { CertificateManager } from "./_components/certificate-manager";
 import {
   Card,

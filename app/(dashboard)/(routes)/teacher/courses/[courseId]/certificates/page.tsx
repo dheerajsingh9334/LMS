@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CourseNavbar } from "@/components/course-navbar";
+import { CourseNavbar } from "@/components/courses/course-navbar";
 import { CertificateManager } from "../_components/certificate-manager";
 
 const CertificatePage = async ({

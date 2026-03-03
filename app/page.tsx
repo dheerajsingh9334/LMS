@@ -56,7 +56,7 @@ export default function HomePage() {
                 <Logo />
                 <div className="flex gap-[20px] xl:gap-[50px] text-[16px] items-center select-none"></div>
                 <div className="flex items-center gap-1 select-none">
-                  <Link href="/auth/login">
+                  <Link href="/auth">
                     <Button
                       variant="ghost"
                       size="lg"
@@ -65,7 +65,7 @@ export default function HomePage() {
                       Sign In
                     </Button>
                   </Link>
-                  <Link href="/auth/register">
+                  <Link href="/auth">
                     <Button variant="outline" size="lg" className="text-md">
                       Sign Up
                     </Button>
@@ -92,7 +92,7 @@ export default function HomePage() {
                   Discover a new way to communicate & connect with fast, easy &
                   unlimited free chat today!
                 </p>
-                <Link href="/auth/register">
+                <Link href="/auth">
                   <Button variant="default" size="custom">
                     Get Started
                   </Button>

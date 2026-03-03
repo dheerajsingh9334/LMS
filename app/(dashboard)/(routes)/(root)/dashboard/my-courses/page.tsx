@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { CoursesList } from "@/components/courses-list";
+import { CoursesList } from "@/components/courses/courses-list";
 
 const MyCoursesPage = async () => {
   const session = await auth();

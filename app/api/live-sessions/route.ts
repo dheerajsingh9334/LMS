@@ -1,18 +1,22 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { eventBus, EventName } from "@/lib/events";
+import "@/lib/events/init";
 
 export async function POST(req: Request) {
   try {
     const user = await currentUser();
-    
+
     if (!user || !user.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     // Check if user is a teacher
     if (user.role !== "TEACHER") {
-      return new NextResponse("Only teachers can create live sessions", { status: 403 });
+      return new NextResponse("Only teachers can create live sessions", {
+        status: 403,
+      });
     }
 
     const { title, description, courseId, chapterId } = await req.json();
@@ -37,6 +41,23 @@ export async function POST(req: Request) {
       },
     });
 
+    // Emit live session started event
+    const course = await db.course.findUnique({
+      where: { id: courseId },
+      select: { title: true },
+    });
+    eventBus.emit(EventName.LIVE_SESSION_STARTED, {
+      sessionId: liveSession.id,
+      sessionTitle: title,
+      courseId,
+      courseTitle: course?.title || "Unknown Course",
+      teacherId: user.id,
+      teacherName: user.name || "Teacher",
+      streamUrl: liveSession.streamUrl || undefined,
+      timestamp: new Date(),
+      triggeredBy: user.id,
+    });
+
     return NextResponse.json(liveSession);
   } catch (error) {
     console.log("[LIVE_SESSION_CREATE]", error);
@@ -51,11 +72,11 @@ export async function GET(req: Request) {
     const isLive = searchParams.get("isLive");
 
     const where: any = {};
-    
+
     if (courseId) {
       where.courseId = courseId;
     }
-    
+
     if (isLive === "true") {
       where.isLive = true;
     }

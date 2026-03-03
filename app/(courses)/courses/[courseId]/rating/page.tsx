@@ -1,6 +1,6 @@
 "use client";
 
-import { StudentCourseNavbar } from "@/components/student-course-navbar";
+import { StudentCourseNavbar } from "@/components/courses/student-course-navbar";
 import { Star } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

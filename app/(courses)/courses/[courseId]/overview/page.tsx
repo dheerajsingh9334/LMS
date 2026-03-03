@@ -14,10 +14,10 @@ import {
   Lock,
 } from "lucide-react";
 import { CoursePurchaseButton } from "../chapters/[chapterId]/_components/course-purchase-button";
-import { StartLearningButton } from "@/components/start-learning-button";
+import { StartLearningButton } from "@/components/courses/start-learning-button";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { StudentCourseNavbar } from "@/components/student-course-navbar";
+import { StudentCourseNavbar } from "@/components/courses/student-course-navbar";
 import { Prerequisites } from "./_components/prerequisites";
 import { CourseHighlights } from "./_components/course-highlights";
 import { WhoIsThisFor } from "./_components/who-is-this-for";
@@ -27,7 +27,7 @@ import { PromoVideo } from "./_components/promo-video";
 import { Testimonials } from "./_components/testimonials";
 import { CertificationDetails } from "./_components/certification-details";
 import { Badge } from "@/components/ui/badge";
-import { EnhancedChapterProgression } from "@/components/enhanced-chapter-progression";
+import { EnhancedChapterProgression } from "@/components/courses/enhanced-chapter-progression";
 import { getEnhancedChapterAccessibility } from "@/lib/chapter-access";
 
 const CourseOverviewPage = async ({

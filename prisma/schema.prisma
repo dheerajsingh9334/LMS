@@ -82,6 +82,15 @@ model Account {
   @@unique([provider, providerAccountId])
 }
 
+model VerificationToken {
+  id      String   @id @default(cuid()) @map("_id")
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
 model Teacher {
   id    String @id @default(cuid()) @map("_id")
   email String @unique
@@ -196,6 +205,44 @@ model Notification {
   @@index([courseId])
 }
 
+// ============================================================================
+// Enhanced Notification System (Event-Driven Architecture v2)
+// ============================================================================
+
+model NotificationV2 {
+  id            String   @id @default(cuid()) @map("_id")
+  userId        String
+  title         String
+  body          String
+  category      String   // NotificationCategory enum value
+  priority      String   @default("MEDIUM") // NotificationPriority enum value
+  actionUrl     String?  // Deep link to relevant content
+  courseId      String?  // Optional course reference
+  metadata      String?  // JSON string for additional data
+  isRead        Boolean  @default(false)
+  isArchived    Boolean  @default(false)
+  readAt        DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, category])
+  @@index([courseId])
+  @@index([createdAt])
+}
+
+// User notification preferences (email opt-in/out per category)
+model NotificationPreference {
+  id                  String   @id @default(cuid()) @map("_id")
+  userId              String   @unique
+  emailEnabled        Boolean  @default(true)
+  pushEnabled         Boolean  @default(true)  // Future: push notifications
+  inAppEnabled        Boolean  @default(true)
+  categoryPreferences String?  // JSON: { "COURSE": true, "LIVE_SESSION": true, ... }
+  quietHoursStart     Int?     // Hour (0-23) when quiet hours start
+  quietHoursEnd       Int?     // Hour (0-23) when quiet hours end
+  digestFrequency     String   @default("INSTANT") // INSTANT, DAILY, WEEKLY
+  updatedAt           DateTime @updatedAt
+}
 
 model Attachment {
   id   String @id @default(cuid()) @map("_id")

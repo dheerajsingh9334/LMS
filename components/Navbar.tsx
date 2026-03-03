@@ -51,7 +51,7 @@ function NavBar({ userId }: NavBarProps) {
             <div className="flex gap-[20px] xl:gap-[50px] text-[16px] items-center select-none"></div>
             <div className="flex items-center gap-1 select-none">
               {!userId && (
-                <Link href={"/auth/login"}>
+                <Link href="/auth">
                   <Button
                     variant="ghost"
                     size="lg"
@@ -62,7 +62,7 @@ function NavBar({ userId }: NavBarProps) {
                 </Link>
               )}
 
-              <Link href={"/auth/register"}>
+              <Link href="/auth">
                 <Button variant="outline" size="lg" className="text-md">
                   {userId ? "Sign Out" : "Sign Up"}
                 </Button>

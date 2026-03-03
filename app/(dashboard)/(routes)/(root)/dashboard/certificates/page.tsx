@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import Image from "next/image";
-import { StudentCertificatePreview } from "@/components/student-certificate-preview";
+import { StudentCertificatePreview } from "@/components/certificates/student-certificate-preview";
 
 const MyCertificatesPage = async () => {
   const session = await auth();

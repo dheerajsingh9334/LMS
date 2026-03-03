@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { getCourses } from "@/actions/Courses/get-courses";
-import { CoursesList } from "@/components/courses-list";
+import { CoursesList } from "@/components/courses/courses-list";
 
 import { Categories } from "./_components/categories";
 import { currentUser } from "@/lib/auth";

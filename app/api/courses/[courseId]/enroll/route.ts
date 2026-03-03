@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { eventBus, EventName } from "@/lib/events";
+import "@/lib/events/init";
 
 export async function POST(
   req: Request,
-  { params }: { params: { courseId: string } }
+  { params }: { params: { courseId: string } },
 ) {
   try {
     const user = await currentUser();
@@ -53,6 +55,17 @@ export async function POST(
         userId: user.id,
         courseId: params.courseId,
         purchaseId: purchase.id,
+      });
+
+      // Emit course enrolled event
+      eventBus.emit(EventName.COURSE_ENROLLED, {
+        courseId: params.courseId,
+        courseTitle: course.title,
+        studentId: user.id,
+        studentName: user.name || "Student",
+        teacherId: course.userId,
+        timestamp: new Date(),
+        triggeredBy: user.id,
       });
 
       return NextResponse.json({

@@ -17,7 +17,7 @@ export const {
 } = NextAuth({
   trustHost: true,
   pages: {
-    signIn: "/auth/login",
+    signIn: "/auth",
     error: "/auth/error",
   },
   cookies: {

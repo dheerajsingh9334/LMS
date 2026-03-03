@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   Video,
   VideoOff,
@@ -12,21 +16,32 @@ import {
   BarChart3,
   Users,
   Share2,
-  Settings,
-  Monitor,
-  Volume2,
-  VolumeX,
+  Send,
+  Pin,
+  Trash2,
+  Shield,
+  Clock,
+  Circle,
+  PanelRightClose,
 } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import dynamic from "next/dynamic";
 import { TeacherPolls } from "./teacher-polls";
-import { TeacherLiveChat } from "./teacher-live-chat";
 
-// Types for Agora SDK - imported dynamically to avoid SSR issues
+// Agora types (dynamic import)
 type IAgoraRTCClient = import("agora-rtc-sdk-ng").IAgoraRTCClient;
 type ICameraVideoTrack = import("agora-rtc-sdk-ng").ICameraVideoTrack;
 type IMicrophoneAudioTrack = import("agora-rtc-sdk-ng").IMicrophoneAudioTrack;
+
+interface ChatMessage {
+  id: string;
+  message: string;
+  userId: string;
+  user: { name: string | null; image?: string | null };
+  createdAt: Date;
+  isPinned?: boolean;
+  isFromTeacher?: boolean;
+}
 
 interface TeacherLiveStreamProps {
   courseId: string;
@@ -49,105 +64,89 @@ export const TeacherLiveStream = ({
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
   const [viewerCount, setViewerCount] = useState(0);
-  const [showPolls, setShowPolls] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [streamStats, setStreamStats] = useState({
-    duration: 0,
-    bitrate: 0,
-    quality: "HD",
-  });
+  const [duration, setDuration] = useState(0);
+
+  const [sidePanel, setSidePanel] = useState<"chat" | "polls" | null>("chat");
+
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [isSendingMsg, setIsSendingMsg] = useState(false);
+  const [selectedMsgId, setSelectedMsgId] = useState<string | null>(null);
 
   const clientRef = useRef<IAgoraRTCClient | null>(null);
   const videoTrackRef = useRef<ICameraVideoTrack | null>(null);
   const audioTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
+  const scrollChat = useCallback(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  /* ── Load chat from DB ── */
+  const loadMessages = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/courses/${courseId}/live/${liveSessionId}/messages`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const msgs = Array.isArray(data) ? data : data.messages;
+      if (msgs) setChatMessages(msgs);
+      if (!Array.isArray(data) && typeof data.viewerCount === "number") {
+        setViewerCount(data.viewerCount);
+      }
+    } catch (err) {
+      console.error("Failed to load messages:", err);
+    }
+  }, [courseId, liveSessionId]);
+
+  /* ── Init stream ── */
   useEffect(() => {
     startStreaming();
-
-    return () => {
-      cleanup();
-    };
+    return () => { cleanup(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Periodically sync viewer count from the server so the
-  // "viewers" badge reflects how many students have actually
-  // joined via the /live/join endpoint.
   useEffect(() => {
-    const fetchViewerCount = async () => {
-      try {
-        const res = await fetch(
-          `/api/courses/${courseId}/live/${liveSessionId}/messages`
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!Array.isArray(data) && typeof data?.viewerCount === "number") {
-          setViewerCount(data.viewerCount);
-        }
-      } catch (error) {
-        console.error("Failed to sync viewer count", error);
-      }
-    };
+    if (isStreaming) {
+      const t = setInterval(() => setDuration((p) => p + 1), 1000);
+      return () => clearInterval(t);
+    }
+  }, [isStreaming]);
 
-    fetchViewerCount();
-    const interval = setInterval(fetchViewerCount, 5000);
-    return () => clearInterval(interval);
-  }, [courseId, liveSessionId]);
+  useEffect(() => {
+    loadMessages();
+    const t = setInterval(loadMessages, 2000);
+    return () => clearInterval(t);
+  }, [loadMessages]);
+
+  useEffect(() => { scrollChat(); }, [chatMessages, scrollChat]);
 
   const startStreaming = async () => {
     try {
-      // Dynamically import Agora SDK only on client side
       const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
-
-      // Get Agora token
       const response = await axios.post(
         `/api/courses/${courseId}/live/${liveSessionId}/token`,
-        {
-          channelName,
-          role: "publisher", // Teacher is publisher
-        }
+        { channelName, role: "publisher" }
       );
-
       const { token, appId } = response.data;
-
-      // Create Agora client
       const client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
       clientRef.current = client;
-
-      // Set client role to host (teacher)
       await client.setClientRole("host");
-
-      // Join channel
       await client.join(appId, channelName, token, null);
 
-      // Create and publish local tracks
       const [audioTrack, videoTrack] =
         await AgoraRTC.createMicrophoneAndCameraTracks();
-
       videoTrackRef.current = videoTrack;
       audioTrackRef.current = audioTrack;
-
-      // Play video locally
-      if (videoContainerRef.current) {
-        videoTrack.play(videoContainerRef.current);
-      }
-
-      // Publish tracks
+      if (videoContainerRef.current) videoTrack.play(videoContainerRef.current);
       await client.publish([videoTrack, audioTrack]);
-
       setIsStreaming(true);
-      toast.success("Streaming started successfully!");
+      toast.success("You're now live!");
 
-      // Listen for user joined (students joining)
-      client.on("user-joined", (user) => {
-        setViewerCount((prev) => prev + 1);
-      });
-
-      client.on("user-left", (user) => {
-        setViewerCount((prev) => Math.max(0, prev - 1));
-      });
+      client.on("user-joined", () => setViewerCount((p) => p + 1));
+      client.on("user-left", () => setViewerCount((p) => Math.max(0, p - 1)));
     } catch (error) {
       console.error("Error starting stream:", error);
       toast.error("Failed to start streaming");
@@ -170,15 +169,10 @@ export const TeacherLiveStream = ({
 
   const cleanup = async () => {
     try {
-      // Close tracks
       videoTrackRef.current?.close();
       audioTrackRef.current?.close();
-
-      // Leave channel
       await clientRef.current?.leave();
-    } catch (error) {
-      console.error("Error cleaning up:", error);
-    }
+    } catch (e) { console.error("Cleanup error:", e); }
   };
 
   const handleEndStream = async () => {
@@ -187,290 +181,256 @@ export const TeacherLiveStream = ({
     onEnd?.();
   };
 
-  const toggleScreenShare = async () => {
-    // Screen sharing logic would go here
-    setIsScreenSharing(!isScreenSharing);
-    toast.success(
-      isScreenSharing ? "Screen sharing stopped" : "Screen sharing started"
-    );
+  /* ── DB chat ── */
+  const sendMessage = async () => {
+    if (!newMessage.trim() || isSendingMsg) return;
+    setIsSendingMsg(true);
+    try {
+      const res = await fetch(
+        `/api/courses/${courseId}/live/${liveSessionId}/messages`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: newMessage.trim(), isFromTeacher: true }),
+        }
+      );
+      if (res.ok) { setNewMessage(""); await loadMessages(); }
+    } catch { toast.error("Failed to send"); }
+    finally { setIsSendingMsg(false); }
   };
 
-  // Stream statistics timer
-  useEffect(() => {
-    if (isStreaming) {
-      const interval = setInterval(() => {
-        setStreamStats((prev) => ({
-          ...prev,
-          duration: prev.duration + 1,
-        }));
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [isStreaming]);
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hours.toString().padStart(2, "0")}:${minutes
-      .toString()
-      .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  const pinMessage = async (id: string) => {
+    try {
+      await axios.patch(`/api/courses/${courseId}/live/${liveSessionId}/messages/${id}/pin`);
+      setChatMessages((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, isPinned: !m.isPinned } : m))
+      );
+    } catch { toast.error("Failed to pin"); }
   };
 
+  const deleteMessage = async (id: string) => {
+    try {
+      await axios.delete(`/api/courses/${courseId}/live/${liveSessionId}/messages/${id}`);
+      setChatMessages((prev) => prev.filter((m) => m.id !== id));
+    } catch { toast.error("Failed to delete"); }
+  };
+
+  const fmtDur = (s: number) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+    return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  };
+
+  const togglePanel = (p: "chat" | "polls") =>
+    setSidePanel((cur) => (cur === p ? null : p));
+
+  /* ── RENDER ── */
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900 z-50 flex flex-col">
-      {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-red-600 via-red-500 to-pink-600 p-4 shadow-2xl border-b border-red-400/20">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-              <div className="relative">
-                <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
-                <div className="absolute inset-0 w-3 h-3 bg-white rounded-full animate-ping" />
-              </div>
-              <span className="text-white font-bold text-sm tracking-wide">
-                LIVE
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-              <Users className="w-4 h-4 text-white" />
-              <span className="text-white font-semibold text-sm">
-                {viewerCount} {viewerCount === 1 ? "viewer" : "viewers"}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-              <Monitor className="w-4 h-4 text-white" />
-              <span className="text-white font-semibold text-sm">
-                {formatDuration(streamStats.duration)}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-              <span className="text-white font-semibold text-sm">
-                {streamStats.quality}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => setShowChat(!showChat)}
-              variant="ghost"
-              size="sm"
-              className={`text-white hover:bg-white/20 ${
-                showChat ? "bg-white/20" : ""
-              }`}
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Chat
-            </Button>
-
-            <Button
-              onClick={() => setShowPolls(!showPolls)}
-              variant="ghost"
-              size="sm"
-              className={`text-white hover:bg-white/20 ${
-                showPolls ? "bg-white/20" : ""
-              }`}
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Polls
-            </Button>
-
-            <Button
-              onClick={handleEndStream}
-              variant="destructive"
-              size="sm"
-              className="bg-white/90 text-red-600 hover:bg-white font-semibold shadow-lg"
-            >
-              <X className="h-4 w-4 mr-2" />
-              End Stream
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced Video Container */}
-      <div className="flex-1 relative overflow-hidden">
-        <div
-          ref={videoContainerRef}
-          className="w-full h-full flex items-center justify-center relative"
-          style={{
-            background:
-              "radial-gradient(circle at center, #1a1a2e 0%, #0f0f1e 100%)",
-          }}
-        >
-          {!isCameraOn && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-              <div className="bg-gray-700/50 backdrop-blur-sm rounded-full p-8 mb-4">
-                <VideoOff className="w-24 h-24 text-gray-400" />
-              </div>
-              <p className="text-gray-400 text-lg font-medium">Camera is off</p>
-              <p className="text-gray-500 text-sm mt-2">
-                Students can still hear you
-              </p>
-            </div>
-          )}
-
-          {/* Recording indicator */}
+    <div className="fixed inset-0 bg-gray-950 z-50 flex flex-col">
+      {/* ─── Top Bar ─── */}
+      <header className="h-14 bg-gray-900/80 backdrop-blur-sm border-b border-white/10 px-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
           {isStreaming && (
-            <div className="absolute top-6 left-6 flex items-center gap-2 bg-red-600/90 backdrop-blur-sm px-4 py-2 rounded-full">
-              <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
-              <span className="text-white text-sm font-medium">Recording</span>
+            <div className="flex items-center gap-1.5 bg-red-600 pl-2 pr-3 py-1 rounded-full">
+              <Circle className="h-2.5 w-2.5 fill-white animate-pulse" />
+              <span className="text-white text-xs font-bold tracking-wide">LIVE</span>
             </div>
           )}
-
-          {/* Stream quality indicator */}
-          <div className="absolute top-6 right-6 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
-            <span className="text-white text-xs font-medium">
-              {streamStats.quality}
-            </span>
+          <div className="flex items-center gap-1.5 text-gray-400 text-sm">
+            <Clock className="h-3.5 w-3.5" />
+            <span className="font-mono">{fmtDur(duration)}</span>
           </div>
-
-          {/* Audio level indicator */}
-          {isMicOn && (
-            <div className="absolute bottom-32 left-6 flex items-center gap-2 bg-black/50 backdrop-blur-sm px-3 py-2 rounded-full">
-              <Volume2 className="w-4 h-4 text-green-400" />
-              <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-1 h-4 rounded-full ${
-                      i < 3 ? "bg-green-400" : "bg-gray-600"
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {!isMicOn && (
-            <div className="absolute bottom-32 left-6 flex items-center gap-2 bg-black/50 backdrop-blur-sm px-3 py-2 rounded-full">
-              <VolumeX className="w-4 h-4 text-red-400" />
-              <span className="text-red-400 text-xs">Muted</span>
-            </div>
-          )}
-
-          {/* Decorative corners */}
-          <div className="absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-red-500/30 rounded-tl-lg" />
-          <div className="absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-red-500/30 rounded-tr-lg" />
-          <div className="absolute bottom-28 left-4 w-12 h-12 border-b-2 border-l-2 border-red-500/30 rounded-bl-lg" />
-          <div className="absolute bottom-28 right-4 w-12 h-12 border-b-2 border-r-2 border-red-500/30 rounded-br-lg" />
-        </div>
-      </div>
-
-      {/* Enhanced Controls */}
-      <div className="bg-gradient-to-t from-black via-gray-900 to-transparent p-6 border-t border-white/5">
-        <div className="max-w-4xl mx-auto">
-          {/* Main Controls */}
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <div className="relative group">
-              <Button
-                onClick={toggleMic}
-                size="lg"
-                className={`rounded-full w-16 h-16 shadow-2xl transition-all duration-300 border border-white/10 ${
-                  isMicOn
-                    ? "bg-gray-800 hover:bg-gray-700 shadow-black/40"
-                    : "bg-gray-900 hover:bg-gray-800 shadow-black/60"
-                }`}
-              >
-                {isMicOn ? (
-                  <Mic className="h-6 w-6 text-white" />
-                ) : (
-                  <MicOff className="h-6 w-6 text-white" />
-                )}
-              </Button>
-              <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 whitespace-nowrap">
-                {isMicOn ? "Mute" : "Unmute"}
-              </span>
-            </div>
-
-            <div className="relative group">
-              <Button
-                onClick={toggleCamera}
-                size="lg"
-                className={`rounded-full w-16 h-16 shadow-2xl transition-all duration-300 border border-white/10 ${
-                  isCameraOn
-                    ? "bg-gray-800 hover:bg-gray-700 shadow-black/40"
-                    : "bg-gray-900 hover:bg-gray-800 shadow-black/60"
-                }`}
-              >
-                {isCameraOn ? (
-                  <Video className="h-6 w-6 text-white" />
-                ) : (
-                  <VideoOff className="h-6 w-6 text-white" />
-                )}
-              </Button>
-              <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 whitespace-nowrap">
-                {isCameraOn ? "Stop Video" : "Start Video"}
-              </span>
-            </div>
-
-            <div className="relative group">
-              <Button
-                onClick={toggleScreenShare}
-                size="lg"
-                className={`rounded-full w-16 h-16 shadow-2xl transition-all duration-300 border border-white/10 ${
-                  isScreenSharing
-                    ? "bg-gray-800 hover:bg-gray-700 shadow-black/40"
-                    : "bg-gray-900 hover:bg-gray-800 shadow-black/60"
-                }`}
-              >
-                <Share2 className="h-6 w-6 text-white" />
-              </Button>
-              <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 whitespace-nowrap">
-                {isScreenSharing ? "Stop Share" : "Share Screen"}
-              </span>
-            </div>
-          </div>
-
-          {/* Secondary Controls */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="text-xs text-gray-400">
-                <span className="text-white font-medium">{viewerCount}</span>{" "}
-                watching
-              </div>
-              <div className="text-xs text-gray-400">
-                Duration:{" "}
-                <span className="text-white font-medium">
-                  {formatDuration(streamStats.duration)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-400 hover:text-white hover:bg-white/10"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="w-px h-4 bg-white/10" />
+          <div className="flex items-center gap-1.5 text-gray-400 text-sm">
+            <Users className="h-3.5 w-3.5" />
+            <span>{viewerCount} watching</span>
           </div>
         </div>
+
+        <div className="flex items-center gap-2">
+          <Button onClick={() => togglePanel("chat")} variant="ghost" size="sm"
+            className={`h-8 text-xs gap-1.5 ${sidePanel === "chat" ? "bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 hover:text-blue-300" : "text-gray-400 hover:bg-white/10 hover:text-white"}`}>
+            <MessageSquare className="h-3.5 w-3.5" /> Chat
+          </Button>
+          <Button onClick={() => togglePanel("polls")} variant="ghost" size="sm"
+            className={`h-8 text-xs gap-1.5 ${sidePanel === "polls" ? "bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 hover:text-purple-300" : "text-gray-400 hover:bg-white/10 hover:text-white"}`}>
+            <BarChart3 className="h-3.5 w-3.5" /> Polls
+          </Button>
+          <div className="w-px h-4 bg-white/10" />
+          <Button onClick={handleEndStream} size="sm"
+            className="h-8 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold gap-1.5">
+            <X className="h-3.5 w-3.5" /> End Stream
+          </Button>
+        </div>
+      </header>
+
+      {/* ─── Body ─── */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Video */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 relative">
+            <div ref={videoContainerRef} className="absolute inset-0 bg-black">
+              {!isCameraOn && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
+                  <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-4 ring-2 ring-gray-700">
+                    <VideoOff className="w-10 h-10 text-gray-500" />
+                  </div>
+                  <p className="text-gray-400 font-medium">Camera is off</p>
+                  <p className="text-gray-600 text-sm mt-1">Students can still hear you</p>
+                </div>
+              )}
+            </div>
+            {isStreaming && (
+              <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                <div className="relative">
+                  <Circle className="h-2 w-2 fill-red-500 text-red-500" />
+                  <Circle className="absolute inset-0 h-2 w-2 fill-red-500 text-red-500 animate-ping" />
+                </div>
+                <span className="text-white text-xs font-medium">REC</span>
+              </div>
+            )}
+          </div>
+
+          {/* Controls */}
+          <div className="h-20 bg-gray-900/80 backdrop-blur-sm border-t border-white/10 flex items-center justify-center gap-3 px-6 shrink-0">
+            <button onClick={toggleMic}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isMicOn ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-red-600 hover:bg-red-700 text-white"}`}
+              title={isMicOn ? "Mute" : "Unmute"}>
+              {isMicOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+            </button>
+            <button onClick={toggleCamera}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isCameraOn ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-red-600 hover:bg-red-700 text-white"}`}
+              title={isCameraOn ? "Camera off" : "Camera on"}>
+              {isCameraOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+            </button>
+            <button className="w-12 h-12 rounded-full bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center transition-all" title="Share screen">
+              <Share2 className="h-5 w-5" />
+            </button>
+            <div className="w-px h-8 bg-white/10 mx-1" />
+            <button onClick={handleEndStream}
+              className="h-12 px-6 rounded-full bg-red-600 hover:bg-red-700 text-white font-semibold flex items-center gap-2 transition-all">
+              <X className="h-5 w-5" /> End
+            </button>
+          </div>
+        </div>
+
+        {/* ─── Side Panel ─── */}
+        {sidePanel && (
+          <div className="w-[380px] bg-gray-900 border-l border-white/10 flex flex-col shrink-0">
+            {sidePanel === "chat" && (
+              <>
+                <div className="h-12 px-4 flex items-center justify-between border-b border-white/10 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-blue-400" />
+                    <span className="text-white text-sm font-semibold">Live Chat</span>
+                    <Badge variant="secondary" className="bg-gray-800 text-gray-400 text-xs">
+                      {chatMessages.length}
+                    </Badge>
+                  </div>
+                  <button onClick={() => setSidePanel(null)} className="p-1 text-gray-500 hover:text-white transition-colors">
+                    <PanelRightClose className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <ScrollArea className="flex-1 p-3">
+                  <div className="space-y-3">
+                    {chatMessages.length === 0 ? (
+                      <div className="text-center py-12">
+                        <MessageSquare className="h-8 w-8 text-gray-700 mx-auto mb-2" />
+                        <p className="text-gray-500 text-sm">No messages yet</p>
+                        <p className="text-gray-600 text-xs mt-1">Messages from students will appear here</p>
+                      </div>
+                    ) : (
+                      chatMessages.map((msg) => (
+                        <div key={msg.id}
+                          className={`group relative p-2.5 rounded-lg transition-colors cursor-pointer ${msg.isFromTeacher ? "bg-blue-600/10 border border-blue-500/20" : "hover:bg-white/5"} ${msg.isPinned ? "ring-1 ring-yellow-500/40" : ""}`}
+                          onClick={() => setSelectedMsgId(selectedMsgId === msg.id ? null : msg.id)}>
+                          {msg.isPinned && (
+                            <div className="flex items-center gap-1 text-yellow-500 text-xs mb-1">
+                              <Pin className="h-3 w-3" /><span>Pinned</span>
+                            </div>
+                          )}
+                          <div className="flex items-start gap-2">
+                            <Avatar className="h-7 w-7 shrink-0">
+                              <AvatarImage src={msg.user.image ?? undefined} />
+                              <AvatarFallback className="text-xs bg-gray-700 text-gray-300">
+                                {msg.user.name?.charAt(0)?.toUpperCase() || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-xs font-semibold ${msg.isFromTeacher ? "text-blue-400" : "text-gray-300"}`}>
+                                  {msg.user.name || "Anonymous"}
+                                </span>
+                                {msg.isFromTeacher && (
+                                  <Badge className="bg-blue-600/20 text-blue-300 text-[10px] px-1 py-0 h-4">
+                                    <Shield className="h-2.5 w-2.5 mr-0.5" />You
+                                  </Badge>
+                                )}
+                                <span className="text-[10px] text-gray-600">
+                                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-300 mt-0.5 break-words">{msg.message}</p>
+                            </div>
+                          </div>
+                          {selectedMsgId === msg.id && (
+                            <div className="flex gap-1 mt-2 pt-2 border-t border-white/5">
+                              <button onClick={(e) => { e.stopPropagation(); pinMessage(msg.id); }}
+                                className="flex items-center gap-1 text-xs text-yellow-500 hover:text-yellow-400 px-2 py-1 rounded bg-yellow-500/10">
+                                <Pin className="h-3 w-3" />{msg.isPinned ? "Unpin" : "Pin"}
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); deleteMessage(msg.id); }}
+                                className="flex items-center gap-1 text-xs text-red-500 hover:text-red-400 px-2 py-1 rounded bg-red-500/10">
+                                <Trash2 className="h-3 w-3" />Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+                </ScrollArea>
+
+                <div className="p-3 border-t border-white/10 shrink-0">
+                  <div className="flex gap-2">
+                    <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                      placeholder="Message your students..."
+                      className="bg-gray-800 border-gray-700 text-white text-sm placeholder:text-gray-500 focus-visible:ring-blue-500"
+                      disabled={isSendingMsg} />
+                    <Button onClick={sendMessage} size="icon" className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                      disabled={!newMessage.trim() || isSendingMsg}>
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {sidePanel === "polls" && (
+              <div className="flex-1 flex flex-col">
+                <div className="h-12 px-4 flex items-center justify-between border-b border-white/10 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-purple-400" />
+                    <span className="text-white text-sm font-semibold">Polls</span>
+                  </div>
+                  <button onClick={() => setSidePanel(null)} className="p-1 text-gray-500 hover:text-white transition-colors">
+                    <PanelRightClose className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-auto">
+                  <TeacherPolls courseId={courseId} liveSessionId={liveSessionId}
+                    isVisible={true} onClose={() => setSidePanel(null)} />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
-      {/* Polls Panel */}
-      <TeacherPolls
-        courseId={courseId}
-        liveSessionId={liveSessionId}
-        isVisible={showPolls}
-        onClose={() => setShowPolls(false)}
-      />
-
-      {/* Chat Panel */}
-      <TeacherLiveChat
-        courseId={courseId}
-        liveSessionId={liveSessionId}
-        teacherName={teacherName}
-        teacherImage={teacherImage}
-        isVisible={showChat}
-        onClose={() => setShowChat(false)}
-      />
     </div>
   );
 };

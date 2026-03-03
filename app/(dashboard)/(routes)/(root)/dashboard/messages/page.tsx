@@ -8,7 +8,7 @@ const MessagesPage = async () => {
   const user = await currentUser();
 
   if (!user?.id) {
-    return redirect("/auth/login");
+    return redirect("/auth");
   }
 
   const messages = await db.userMessage.findMany({

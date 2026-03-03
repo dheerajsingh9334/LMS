@@ -8,7 +8,7 @@ const authConfig: NextAuthConfig = {
   // The detailed providers/adapter/callbacks live in auth.ts (Node runtime).
   session: { strategy: "jwt" },
   pages: {
-    signIn: "/auth/login",
+    signIn: "/auth",
     error: "/auth/error",
   },
   // Trust the request host (prevents UntrustedHost errors in Edge/middleware).

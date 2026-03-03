@@ -29,7 +29,7 @@ const AdminPage = async () => {
   const user = await currentUser();
 
   if (!user) {
-    return redirect("/auth/login");
+    return redirect("/auth");
   }
 
   if (user.role !== UserRole.ADMIN) {

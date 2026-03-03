@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { StudentCourseNavbar } from "@/components/student-course-navbar";
+import { StudentCourseNavbar } from "@/components/courses/student-course-navbar";
 import { TrendingUp, CheckCircle, Clock, Trophy } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";

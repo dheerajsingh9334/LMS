@@ -49,6 +49,29 @@ const nextConfig = {
     },
   },
 
+  // Scalability: Response headers for SSE and caching
+  async headers() {
+    return [
+      {
+        source: "/api/notifications/stream",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-transform" },
+          { key: "Connection", value: "keep-alive" },
+          { key: "X-Accel-Buffering", value: "no" },
+          { key: "Content-Type", value: "text/event-stream" },
+        ],
+      },
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-XSS-Protection", value: "1; mode=block" },
+        ],
+      },
+    ];
+  },
+
   // 🚨 DEPLOY UNBLOCK
   eslint: {
     ignoreDuringBuilds: true,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { VideoPlaylist } from "@/components/video-playlist";
+import { VideoPlaylist } from "@/components/video/video-playlist";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Chapter {

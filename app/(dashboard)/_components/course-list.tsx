@@ -1,6 +1,6 @@
 "use client";
 
-import { CourseCard } from "@/components/course-card";
+import { CourseCard } from "@/components/courses/course-card";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { CourseWithProgressWithCategory } from "@/types/course";
@@ -19,7 +19,7 @@ export const CoursesList = ({ items }: CoursesListProps) => {
         className={cn(
           "grid sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 ",
           isCollectionPage ||
-            (isInstructorPage && "md:grid-cols-3 lg:grid-cols-4")
+            (isInstructorPage && "md:grid-cols-3 lg:grid-cols-4"),
         )}
       >
         {items.map((item) => {

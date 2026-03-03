@@ -1,7 +1,7 @@
 import { currentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { StudentCourseNavbar } from "@/components/student-course-navbar";
+import { StudentCourseNavbar } from "@/components/courses/student-course-navbar";
 import {
   Award,
   Download,
@@ -21,8 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
 import Image from "next/image";
-import { StudentCertificateDownloadButton } from "@/components/student-certificate-download-button";
-import { StudentCertificatePreview } from "@/components/student-certificate-preview";
+import { StudentCertificateDownloadButton } from "@/components/certificates/student-certificate-download-button";
+import { StudentCertificatePreview } from "@/components/certificates/student-certificate-preview";
 
 const CourseCertificatePage = async ({
   params,

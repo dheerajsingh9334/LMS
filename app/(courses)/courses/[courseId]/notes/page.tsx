@@ -1,6 +1,6 @@
 "use client";
 
-import { StudentCourseNavbar } from "@/components/student-course-navbar";
+import { StudentCourseNavbar } from "@/components/courses/student-course-navbar";
 import { UniversalNotes } from "@/components/notes/universal-notes";
 
 const CourseNotesPage = ({ params }: { params: { courseId: string } }) => {

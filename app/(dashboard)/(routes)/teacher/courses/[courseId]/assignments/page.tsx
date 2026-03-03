@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlusCircle, Clock, CheckCircle, XCircle } from "lucide-react";
 import Link from "next/link";
-import { CourseNavbar } from "@/components/course-navbar";
+import { CourseNavbar } from "@/components/courses/course-navbar";
 
 const AssignmentsPage = async ({
   params

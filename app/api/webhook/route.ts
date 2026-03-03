@@ -2,21 +2,28 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
+import { eventBus, EventName } from "@/lib/events";
+import "@/lib/events/init";
 
 export async function POST(req: Request) {
   try {
     console.log("[STRIPE_WEBHOOK] Received webhook request");
-    
+
     const body = await req.text();
     const signature = req.headers.get("Stripe-Signature") as string | null;
 
     if (!signature) {
       console.error("[STRIPE_WEBHOOK] Missing Stripe-Signature header");
-      return new NextResponse("Webhook Error: Missing Stripe-Signature header", { status: 400 });
+      return new NextResponse(
+        "Webhook Error: Missing Stripe-Signature header",
+        { status: 400 },
+      );
     }
 
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
-      console.error("[STRIPE_WEBHOOK] Missing STRIPE_WEBHOOK_SECRET env variable");
+      console.error(
+        "[STRIPE_WEBHOOK] Missing STRIPE_WEBHOOK_SECRET env variable",
+      );
       return new NextResponse("Server configuration error", { status: 500 });
     }
 
@@ -26,16 +33,21 @@ export async function POST(req: Request) {
       event = stripe.webhooks.constructEvent(
         body,
         signature,
-        process.env.STRIPE_WEBHOOK_SECRET
+        process.env.STRIPE_WEBHOOK_SECRET,
       );
       console.log("[STRIPE_WEBHOOK] Event verified:", event.type);
     } catch (error: any) {
       console.error("[STRIPE_WEBHOOK] Verification failed:", error.message);
-      return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 });
+      return new NextResponse(`Webhook Error: ${error.message}`, {
+        status: 400,
+      });
     }
 
     // Only process events we care about with detailed logging
-    const relevantEvents = ['checkout.session.completed', 'checkout.session.expired'];
+    const relevantEvents = [
+      "checkout.session.completed",
+      "checkout.session.expired",
+    ];
     if (!relevantEvents.includes(event.type)) {
       return new NextResponse(null, { status: 200 });
     }
@@ -48,20 +60,26 @@ export async function POST(req: Request) {
     console.log("[STRIPE_WEBHOOK] Processing session:", {
       eventType: event.type,
       sessionId: session.id,
-      metadata: { userId, courseId, purchaseId }
+      metadata: { userId, courseId, purchaseId },
     });
 
     if (event.type === "checkout.session.completed") {
       if (!userId || !courseId || !purchaseId) {
-        console.error("[STRIPE_WEBHOOK] Missing metadata:", { userId, courseId, purchaseId });
-        return new NextResponse("Webhook Error: Missing metadata", { status: 400 });
+        console.error("[STRIPE_WEBHOOK] Missing metadata:", {
+          userId,
+          courseId,
+          purchaseId,
+        });
+        return new NextResponse("Webhook Error: Missing metadata", {
+          status: 400,
+        });
       }
 
       try {
         // Verify purchase exists and hasn't been processed
         const existingPurchase = await db.purchase.findUnique({
           where: { id: purchaseId },
-          select: { id: true, paymentStatus: true }
+          select: { id: true, paymentStatus: true },
         });
 
         if (!existingPurchase) {
@@ -70,7 +88,10 @@ export async function POST(req: Request) {
         }
 
         if (existingPurchase.paymentStatus === "completed") {
-          console.log("[STRIPE_WEBHOOK] Purchase already completed:", purchaseId);
+          console.log(
+            "[STRIPE_WEBHOOK] Purchase already completed:",
+            purchaseId,
+          );
           return new NextResponse(null, { status: 200 });
         }
 
@@ -79,10 +100,46 @@ export async function POST(req: Request) {
           where: { id: purchaseId },
           data: {
             paymentStatus: "completed",
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
         });
-        console.log("[STRIPE_WEBHOOK] Purchase marked as completed:", purchaseId);
+        console.log(
+          "[STRIPE_WEBHOOK] Purchase marked as completed:",
+          purchaseId,
+        );
+
+        // Emit payment completed event
+        const course = await db.course.findUnique({
+          where: { id: courseId },
+          select: { title: true, userId: true },
+        });
+        if (course) {
+          eventBus.emit(EventName.PAYMENT_COMPLETED, {
+            purchaseId: purchaseId!,
+            courseId: courseId!,
+            courseTitle: course.title,
+            studentId: userId!,
+            amount: (session.amount_total || 0) / 100,
+            teacherId: course.userId,
+            timestamp: new Date(),
+            triggeredBy: userId!,
+          });
+
+          // Also emit enrollment event since payment completes enrollment
+          const student = await db.user.findUnique({
+            where: { id: userId! },
+            select: { name: true },
+          });
+          eventBus.emit(EventName.COURSE_ENROLLED, {
+            courseId: courseId!,
+            courseTitle: course.title,
+            studentId: userId!,
+            studentName: student?.name || "Student",
+            teacherId: course.userId,
+            timestamp: new Date(),
+            triggeredBy: userId!,
+          });
+        }
       } catch (error) {
         console.error("[STRIPE_WEBHOOK] Failed to update purchase:", error);
         return new NextResponse("Failed to update purchase", { status: 500 });
@@ -94,12 +151,34 @@ export async function POST(req: Request) {
             where: { id: purchaseId },
             data: {
               paymentStatus: "failed",
-              updatedAt: new Date()
+              updatedAt: new Date(),
             },
           });
-          console.log("[STRIPE_WEBHOOK] Purchase marked as failed:", purchaseId);
+          console.log(
+            "[STRIPE_WEBHOOK] Purchase marked as failed:",
+            purchaseId,
+          );
+
+          // Emit payment failed event
+          if (courseId && userId) {
+            const course = await db.course.findUnique({
+              where: { id: courseId },
+              select: { title: true },
+            });
+            eventBus.emit(EventName.PAYMENT_FAILED, {
+              courseId,
+              courseTitle: course?.title || "Course",
+              studentId: userId,
+              reason: "Payment session expired",
+              timestamp: new Date(),
+              triggeredBy: userId,
+            });
+          }
         } catch (error) {
-          console.error("[STRIPE_WEBHOOK] Failed to mark purchase as failed:", error);
+          console.error(
+            "[STRIPE_WEBHOOK] Failed to mark purchase as failed:",
+            error,
+          );
           return new NextResponse("Failed to update purchase", { status: 500 });
         }
       }

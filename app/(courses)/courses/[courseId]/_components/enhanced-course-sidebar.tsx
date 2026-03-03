@@ -1,7 +1,7 @@
 import { Chapter, Course, UserProgress } from "@prisma/client";
 
 import { db } from "@/lib/db";
-import { CourseProgress } from "@/components/course-progress";
+import { CourseProgress } from "@/components/courses/course-progress";
 import { CourseSidebarItem } from "./course-sidebar-item";
 import { checkPurchase } from "@/actions/Courses/get-purchase";
 import { currentUser } from "@/lib/auth";

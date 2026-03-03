@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { InteractiveVideoPlayer } from "@/components/interactive-video-player";
+import { InteractiveVideoPlayer } from "@/components/video/interactive-video-player";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { useConfettiStore } from "@/hooks/use-confetti-store";

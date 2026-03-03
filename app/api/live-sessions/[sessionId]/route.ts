@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { eventBus, EventName } from "@/lib/events";
+import "@/lib/events/init";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: { sessionId: string } },
 ) {
   try {
     const user = await currentUser();
-    
+
     if (!user || !user.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
@@ -39,6 +41,22 @@ export async function PATCH(
       },
     });
 
+    // Emit session ended event when going offline
+    if (!isLive && liveSession.startedAt) {
+      const duration = Math.round(
+        (Date.now() - new Date(liveSession.startedAt).getTime()) / 60000,
+      );
+      eventBus.emit(EventName.LIVE_SESSION_ENDED, {
+        sessionId: params.sessionId,
+        sessionTitle: liveSession.title,
+        courseId: liveSession.courseId,
+        duration,
+        viewCount: liveSession.viewCount,
+        timestamp: new Date(),
+        triggeredBy: user.id!,
+      });
+    }
+
     return NextResponse.json(updatedSession);
   } catch (error) {
     console.log("[LIVE_SESSION_UPDATE]", error);
@@ -48,11 +66,11 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: { sessionId: string } },
 ) {
   try {
     const user = await currentUser();
-    
+
     if (!user || !user.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }

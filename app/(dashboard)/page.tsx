@@ -6,7 +6,7 @@ const MainDashboardPage = async () => {
   const user = await currentUser();
 
   if (!user?.id) {
-    redirect("/auth/login");
+    redirect("/auth");
   }
 
   // Redirect based on user role

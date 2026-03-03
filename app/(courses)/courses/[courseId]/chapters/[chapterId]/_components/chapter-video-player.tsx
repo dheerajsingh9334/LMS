@@ -3,7 +3,7 @@
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useCallback, useEffect, useRef } from "react";
-import { VideoPlayerWithNotes } from "@/components/video-player-with-notes";
+import { VideoPlayerWithNotes } from "@/components/video/video-player-with-notes";
 import { useParams, useRouter } from "next/navigation";
 
 interface ChapterVideoPlayerProps {
